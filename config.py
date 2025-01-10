@@ -5,6 +5,10 @@ from pathlib import Path
 class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).parent
     DB_NAME: str
+    sigma_server: str
+    sigma_database: str
+    sigma_username: str
+    sigma_password: str
 
     @property
     def db_url(self):
@@ -14,4 +18,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-BASEDIR = settings.BASEDIR
+BASEDIR = settings.BASE_DIR
