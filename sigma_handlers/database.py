@@ -34,7 +34,7 @@ class Database:
         """Получение имён колонок"""
         return [column[0] for column in self.cursor.description]
 
-    def fetch_all(self, query: str, params=()) -> list:
+    def fetch_all(self, query: str, params: tuple = ()) -> list:
         """Получение всех данных из запроса."""
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
