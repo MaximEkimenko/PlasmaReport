@@ -2,6 +2,8 @@ import datetime
 from pprint import pprint
 from sigma_handlers.database import Database
 from sigma_handlers.SQLqueries import main_query, column_query
+from settings.translate_dict import translate_dict
+from utils.common_utils import create_sorted_named_cols
 
 
 def get_sigma_data(start_date: datetime, end_date: datetime) -> list[dict]:
@@ -11,8 +13,10 @@ def get_sigma_data(start_date: datetime, end_date: datetime) -> list[dict]:
         result = db.fetch_all(main_query, params)
         columns = db.get_columns()
         results = [dict(zip(columns, row)) for row in result]  # значения
+        # сортировка и перевод колонок
+        sorted_results = create_sorted_named_cols(results=results, column_names=columns)
 
-    return results
+    return sorted_results
 
 
 def get_column_names() -> tuple[tuple, dict]:
@@ -26,7 +30,7 @@ def get_column_names() -> tuple[tuple, dict]:
 
 if __name__ == '__main__':
     # res = get_sigma_data()
-    _columns = get_column_names()
+    _columns, _ = get_column_names()
     print(_columns)
     # print(res)
     # print(res[0])
