@@ -1,9 +1,10 @@
 import datetime
-from pprint import pprint
 from sigma_handlers.database import Database
 from sigma_handlers.SQLqueries import main_query, column_query
-from settings.translate_dict import translate_dict
 from utils.common_utils import create_sorted_named_cols
+
+from concurrent.futures import ThreadPoolExecutor
+from asyncio import get_running_loop
 
 
 def get_sigma_data(start_date: datetime, end_date: datetime) -> list[dict]:
@@ -19,6 +20,13 @@ def get_sigma_data(start_date: datetime, end_date: datetime) -> list[dict]:
     return sorted_results
 
 
+async def get_sigma_data_async(start_date: datetime, end_date: datetime) -> list[dict]:
+    """Асинхронная версия функции получения данных"""
+    loop = get_running_loop()
+    with ThreadPoolExecutor() as pool:
+        return await loop.run_in_executor(pool, get_sigma_data, start_date, end_date)
+
+
 def get_column_names() -> tuple[tuple, dict]:
     """Получение списка колонок"""
     with Database() as db:
@@ -29,8 +37,4 @@ def get_column_names() -> tuple[tuple, dict]:
 
 
 if __name__ == '__main__':
-    # res = get_sigma_data()
-    _columns, _ = get_column_names()
-    print(_columns)
-    # print(res)
-    # print(res[0])
+    pass

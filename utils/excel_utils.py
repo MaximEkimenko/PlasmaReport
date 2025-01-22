@@ -1,11 +1,14 @@
 from openpyxl import Workbook
 import datetime
-from typing import BinaryIO
+
 import io
 from sigma_handlers.sigma_db import get_sigma_data
 
+from concurrent.futures import ThreadPoolExecutor
+from asyncio import get_running_loop
 
-def create_excel(data: list) -> BinaryIO:
+
+def create_excel(data: list) -> io.BytesIO:
     wb = Workbook()
     ws = wb.active
     ws.title = "Orders"
@@ -26,6 +29,12 @@ def create_excel(data: list) -> BinaryIO:
     wb.save(file_stream)
     file_stream.seek(0)
     return file_stream
+
+
+async def create_excel_async(data) -> io.BytesIO:
+    loop = get_running_loop()
+    with ThreadPoolExecutor() as pool:
+        return await loop.run_in_executor(pool, create_excel, data)
 
 
 if __name__ == "__main__":

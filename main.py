@@ -3,8 +3,8 @@ from sigma_handlers.sigma_db import get_sigma_data
 import datetime
 from fastapi import FastAPI, Query
 from fastapi.responses import StreamingResponse
-from sigma_handlers.sigma_db import get_sigma_data
-from utils.excel_utils import create_excel
+from sigma_handlers.sigma_db import get_sigma_data, get_sigma_data_async
+from utils.excel_utils import create_excel, create_excel_async
 from datetime import date
 
 app = FastAPI()
@@ -21,7 +21,7 @@ app = FastAPI()
 
 # TODO разложить enodpoints по своим местам
 @app.get("/download_excel", response_class=StreamingResponse, tags=["Excel"])
-def download_excel(
+async def download_excel(
         start_date: date = Query(...,
                                  description="Начальная дата фильтрации данных (формат: YYYY-MM-DD)",
                                  example="2025-01-09"),
@@ -55,9 +55,9 @@ def download_excel(
     :param end_date: Конечная дата для фильтрации данных.
     :return: Excel-файл в виде потока с отфильтрованными данными.
     """
-    data = get_sigma_data(start_date=start_date, end_date=end_date)
+    data = await get_sigma_data_async(start_date=start_date, end_date=end_date)
     # Генерация Excel-файла
-    file_stream = create_excel(data)
+    file_stream = await create_excel_async(data)
     # Возвращение потока
     return StreamingResponse(
         file_stream,
@@ -67,7 +67,7 @@ def download_excel(
 
 
 @app.get("/get_raw_data", tags=["Data"])
-def get_raw_data(
+async def get_raw_data(
         start_date: date = Query(...,
                                  description="Начальная дата фильтрации данных (формат: YYYY-MM-DD)",
                                  example="2025-01-09"),
@@ -115,10 +115,11 @@ def get_raw_data(
     :param end_date: Конечная дата для фильтрации данных.
     :return: Список словарей с данными
     """
-    data = get_sigma_data(start_date=start_date, end_date=end_date)
+    data = await get_sigma_data_async(start_date=start_date, end_date=end_date)
     return data
 
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
+# uvicorn main:app --host 0.0.0.0 --port 8000  --reload
