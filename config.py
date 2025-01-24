@@ -12,9 +12,9 @@ class Settings(BaseSettings):
 
     @property
     def db_url(self):
-        return fr'sqlite+aiosqlite:///{self.BASEDIR}/{self.DB_NAME}'
+        return rf"sqlite+aiosqlite:///{self.BASEDIR}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file=f'{BASE_DIR}/.env', case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=f"{BASE_DIR}/.env", case_sensitive=False)
 
 
 settings = Settings()

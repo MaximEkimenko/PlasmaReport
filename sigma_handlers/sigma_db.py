@@ -9,7 +9,7 @@ from asyncio import get_running_loop
 
 def get_sigma_data(start_date: datetime, end_date: datetime) -> list[dict]:
     """Получение данных из базы sigma nest"""
-    params = (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+    params = (start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
     with Database() as db:
         result = db.fetch_all(main_query, params)
         columns = db.get_columns()
@@ -36,5 +36,5 @@ def get_column_names() -> tuple[tuple, dict]:
     return tuple(columns), results
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

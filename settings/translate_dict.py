@@ -1,10 +1,11 @@
 translate_dict = {
-    "OrderDate": "Дата заказа",
     "DateCreated": "Дата создания заказа",
+    "OrderDate": "Дата заказа",
     "WONumber": "Номер заказа",
     "PartName": "Деталь",
     "Cuttingtime": "Время реза",
     "Material": "Материал",
+    "Thickness": "Толщина",
     "NetArea": "Площадь Net",
     "Netweight": "Вес Net",
     "RectArea": "Площадь Rect",
@@ -14,4 +15,5 @@ translate_dict = {
     "QtyCompleted": "Количество выполнено",
     "QtyInProcess": "Количество в работе",
     "QtyRemaining": "Количество осталось",
+
 }

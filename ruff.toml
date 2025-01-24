@@ -1,0 +1,121 @@
+
+exclude = [".venv", "venv", ".idea",]
+include = ["*.py"]
+respect-gitignore = true
+show-fixes = true
+target-version = "py312"
+line-length = 120
+
+[lint]
+select = [
+   "D",      # docstrings
+   "F",      # unused imports
+   "N",      # pep8-naming
+   "C90",
+   "E",
+   "I",
+   "W",
+   "A",
+   "PLC",
+   "UP",     # pyupgrade
+   "S",      # bandit
+   "BLE",    # flake8-blind-except
+   "B",      # bugbear
+   "C4",     # comprehensions
+   "DTZ",    # datetimez
+   "EM",     # error-messages
+   "FA",     # future-annotations
+   "ISC",    # implicit string concat
+   "PIE",    # flake8-pie
+   "PT",     # flake8-pytest-style
+   "SLF",    # flake8-self
+   "SIM",    # flake8-simplify
+   "ARG",    # flake8-unused-argument
+   "TRY",    # tryceratops
+   "ANN",
+   "ASYNC",
+   "BLE",
+   "FBT",
+   "COM",
+   "C4",
+   "DJ",
+   "ISC",
+   "ICN",
+   "T20",
+   "Q",
+   "RSE",
+   "RET",
+   "SLF",
+   "SLOT",
+   "SIM",
+   "TID",  # требует отдельной настройки
+   "PTH",
+   "PLE",
+   "PLR",
+   "PLW",
+   "FAST",
+   "PERF",
+   "FURB",
+   "DOC",
+   "RUF", # требует отдельной настройки
+
+
+
+
+
+
+
+
+
+
+
+]
+
+[lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+
+
+
+[lint.flake8-annotations]
+suppress-none-returning = true
+
+[lint.flake8-bandit]
+check-typed-exception = true
+
+[lint.flake8-comprehensions]
+allow-dict-calls-with-keyword-arguments = false
+
+[lint.flake8-import-conventions.aliases]
+altair = "alt"
+"matplotlib.pyplot" = "plt"
+numpy = "np"
+pandas = "pd"
+seaborn = "sns"
+scipy = "sp"
+
+
+[lint.flake8-import-conventions.banned-aliases]
+openpyxl = ["op", ]
+
+[lint.flake8-import-conventions]
+banned-from = ["typing",]
+
+
+
+
+[lint.flake8-type-checking]
+strict = true
+
+[lint.isort]
+detect-same-package = false
+force-single-line = true
+force-wrap-aliases = true
+combine-as-imports = true
+from-first = false
+length-sort = true
+length-sort-straight = true
+lines-between-types = 1
+

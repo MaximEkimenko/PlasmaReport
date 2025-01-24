@@ -1,4 +1,3 @@
-from pprint import pprint
 from typing import Generator
 import ezodf
 from pathlib import Path
@@ -16,7 +15,7 @@ def read_ods_and_xls_files(file_path: Path | str) -> list:
                 try:
                     if cell.value is not None:
                         cleared_row.append(cell.value)
-                except ValueError as e:
+                except ValueError:
                     pass
             if cleared_row:
                 clean_rows.append(cleared_row.copy())
@@ -30,9 +29,9 @@ def read_ods_and_xls_dir(file_dir: Generator):
     """Чтение всей директории фалов с ods и xls"""
     layouts = []
     for index, file in enumerate(file_dir, start=1):
-        if file.absolute().suffix.lower() not in ('.xls', '.ods'):
+        if file.absolute().suffix.lower() not in (".xls", ".ods"):
             continue
-        if '~' in str(file.absolute()):
+        if "~" in str(file.absolute()):
             continue
         read_ods_and_xls_files(file)
         layouts.append(read_ods_and_xls_files(file))
@@ -48,12 +47,14 @@ def collect_data(data_list: list):
             print(row)
 
 
-if __name__ == '__main__':
-    plasma_file_path = r'D:\АСУП\Python\Projects\PlasmaReport\misc\plasma_files'
-    ods_file_path = r'D:\АСУП\Python\Projects\PlasmaReport\misc\ODS'
-    xls_ods_files = Path(plasma_file_path).glob('*')
+if __name__ == "__main__":
+    plasma_file_path = r"D:\АСУП\Python\Projects\PlasmaReport\misc\plasma_files"
+    ods_file_path = r"D:\АСУП\Python\Projects\PlasmaReport\misc\ODS"
+    xls_ods_files = Path(plasma_file_path).glob("*")
     # read_ods_and_xls_dir(xls_ods_files)
-    one_file = r'D:\АСУП\Python\Projects\PlasmaReport\misc\plasma_files\S245- 2-136661.ODS'
+    one_file = (
+        r"D:\АСУП\Python\Projects\PlasmaReport\misc\plasma_files\S245- 2-136661.ODS"
+    )
     read_ods_and_xls_files(one_file)
 
     collect_data(read_ods_and_xls_dir(xls_ods_files))

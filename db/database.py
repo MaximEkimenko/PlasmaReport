@@ -1,21 +1,35 @@
 from config import settings
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession, AsyncAttrs
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, declared_attr, class_mapper
+from sqlalchemy.ext.asyncio import (
+    async_sessionmaker,
+    create_async_engine,
+    AsyncSession,
+    AsyncAttrs,
+)
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    DeclarativeBase,
+    declared_attr,
+    class_mapper,
+)
 from sqlalchemy import Integer, TIMESTAMP, func
 import datetime
 from logger_config import log
 
 database_url = settings.db_url
 engine = create_async_engine(url=database_url)
-async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+async_session_maker = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP,
-                                                 server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=func.now(), onupdate=func.now()
+    )
 
     @classmethod
     @declared_attr
@@ -34,8 +48,9 @@ def connection(method):
                 return await method(*args, **kwargs, session=session)
             except Exception as e:
                 await session.rollback()
-                log.error(f"Ошибка подключения к БД.")
+                log.error("Ошибка подключения к БД.")
                 log.exception(e)
             finally:
                 await session.close()
+
     return wrapper

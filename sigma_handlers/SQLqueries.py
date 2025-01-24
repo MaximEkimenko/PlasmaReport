@@ -1,15 +1,16 @@
-initial_table = 'PartWithQtyInProcess'  # основная таблица справочно
-joined_table = 'WorkOrderWithPartQuantities'  # присоединённая справочно
+initial_table = "PartWithQtyInProcess"  # основная таблица справочно
+joined_table = "WorkOrderWithPartQuantities"  # присоединённая справочно
 
 # запрос на данные в интервале
-main_query = f"""
+main_query = """
             SELECT 
-
+            
             PartName, 
             OrderDate,
             DateCreated,
             Cuttingtime, 
-            Material, 
+            Material,
+            Thickness, 
             NetArea,
             Netweight,
             RectArea,
@@ -26,11 +27,11 @@ main_query = f"""
             ON dbo.PartWithQtyInProcess.WONumber=dbo.WorkOrderWithPartQuantities.WONumber
             WHERE OrderDate > ? --start_date
             AND OrderDate < ? --end_date
-            ORDER BY DateCreated DESC
+            ORDER BY DateCreated
             """
 
 # запрос на получение списка колонок
-column_query = f"""
+column_query = """
             SELECT 
 
             PartName, 
@@ -38,6 +39,7 @@ column_query = f"""
             DateCreated,
             Cuttingtime, 
             Material, 
+            Thickness,
             NetArea,
             Netweight,
             RectArea,
@@ -57,7 +59,7 @@ column_query = f"""
             """
 
 # custom_query
-custom_query = f"""
+custom_query = """
 
 
 """

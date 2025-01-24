@@ -18,11 +18,17 @@ class Database:
 
     def connect(self) -> None:
         """Подключение к базе данных и создание курсора."""
-        self.connection = pyodbc.connect('DRIVER=SQL Server;'
-                                         'SERVER=' + self.sigma_server +
-                                         ';DATABASE=' + self.sigma_database +
-                                         ';UID=' + self.sigma_username +
-                                         ';PWD=' + self.sigma_password)
+        self.connection = pyodbc.connect(
+            "DRIVER=SQL Server;"
+            "SERVER="
+            + self.sigma_server
+            + ";DATABASE="
+            + self.sigma_database
+            + ";UID="
+            + self.sigma_username
+            + ";PWD="
+            + self.sigma_password
+        )
         self.cursor = self.connection.cursor()
 
     def execute_query(self, query: str, params=()) -> None:

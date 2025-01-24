@@ -1,14 +1,17 @@
 from openpyxl import Workbook
 import datetime
-
 import io
 from sigma_handlers.sigma_db import get_sigma_data
-
+import datetime
 from concurrent.futures import ThreadPoolExecutor
 from asyncio import get_running_loop
+import openpyxl as op
 
 
 def create_excel(data: list) -> io.BytesIO:
+    """
+
+    """
     wb = Workbook()
     ws = wb.active
     ws.title = "Orders"
@@ -19,11 +22,17 @@ def create_excel(data: list) -> io.BytesIO:
 
     # Данные
     for row in data:
-        ws.append([row[key] if not isinstance(row[key], datetime.datetime)
-                   else row[key].strftime("%d.%m.%Y") for key in headers])
+        ws.append(
+            [
+                row[key]
+                if not isinstance(row[key], datetime.datetime)
+                else row[key].strftime("%d.%m.%Y")
+                for key in headers
+            ]
+        )
     # сохранение в файл
-    # filename = "file_result.xlsx"
-    # wb.save(filename)
+    # filename = "file_result.xlsx" # noqa
+    # wb.save(filename) # noqa
     # Сохранение в поток
     file_stream = io.BytesIO()
     wb.save(file_stream)
