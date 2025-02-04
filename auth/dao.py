@@ -1,0 +1,9 @@
+"""DAO приложения auth."""
+from auth.models import User
+from db.base_dao import BaseDAO
+
+
+class UsersDAO(BaseDAO):
+    """Класс объекта доступа к БД для пользователя."""
+
+    model = User

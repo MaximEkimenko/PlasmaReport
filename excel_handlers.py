@@ -1,10 +1,14 @@
-from typing import Generator
-import ezodf
+# ruff: noqa
+# TODO UNUSED
+"""Управление excel."""
 from pathlib import Path
+from collections.abc import Generator
+
+import ezodf
 
 
 def read_ods_and_xls_files(file_path: Path | str) -> list:
-    """Чтение ods или xls файла"""
+    """Чтение ods или xls файла."""
     doc = ezodf.opendoc(file_path)
     clean_rows = []
     for sheet in doc.sheets:

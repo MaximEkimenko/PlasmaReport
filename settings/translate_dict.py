@@ -1,3 +1,4 @@
+"""Словарь переводчик полей БД sigma nest."""
 translate_dict = {
     "DateCreated": "Дата создания заказа",
     "OrderDate": "Дата заказа",

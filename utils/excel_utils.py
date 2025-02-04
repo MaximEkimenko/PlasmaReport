@@ -1,17 +1,17 @@
-from openpyxl import Workbook
-import datetime
+"""Обработка данных excel."""
 import io
-from sigma_handlers.sigma_db import get_sigma_data
 import datetime
-from concurrent.futures import ThreadPoolExecutor
+
 from asyncio import get_running_loop
-import openpyxl as op
+from concurrent.futures import ThreadPoolExecutor
+
+from openpyxl import Workbook
+
+from sigma_handlers.sigma_db import get_sigma_data
 
 
 def create_excel(data: list) -> io.BytesIO:
-    """
-
-    """
+    """Создание excel файла."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Orders"
@@ -28,11 +28,11 @@ def create_excel(data: list) -> io.BytesIO:
                 if not isinstance(row[key], datetime.datetime)
                 else row[key].strftime("%d.%m.%Y")
                 for key in headers
-            ]
+            ],
         )
     # сохранение в файл
-    # filename = "file_result.xlsx" # noqa
-    # wb.save(filename) # noqa
+    # filename = "file_result.xlsx"
+    # wb.save(filename)
     # Сохранение в поток
     file_stream = io.BytesIO()
     wb.save(file_stream)
@@ -40,7 +40,8 @@ def create_excel(data: list) -> io.BytesIO:
     return file_stream
 
 
-async def create_excel_async(data) -> io.BytesIO:
+async def create_excel_async(data: list) -> io.BytesIO:
+    """Асинхронная обертка функции создания excel файла."""
     loop = get_running_loop()
     with ThreadPoolExecutor() as pool:
         return await loop.run_in_executor(pool, create_excel, data)
