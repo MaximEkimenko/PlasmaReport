@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import BASEDIR
 from logger_config import log
+from admin_panel.admin import create_admin_panel
 from settings.register_routers import register_routers
 
 # TODO
@@ -20,6 +21,7 @@ from settings.register_routers import register_routers
 #  cmd (bash) script по развёртке на приложения на клиенте
 #  запуск с ярлыка на 0.0.0.0 (совместно с FRONT?) лучше запускать на том же сервере, что и sigma
 #  раздача ссылок заинтересованным
+#  изучить, добавить в knowledgebase FastAPI-cash FastAPI-profiler добавить в проект при необходимости.
 
 
 @asynccontextmanager
@@ -34,7 +36,7 @@ app = FastAPI(
     title="Приложение для учёта сменных заданий усановок пламзенной резки",
     description="there is no description yet.",
     version="0.0.1",
-    lifespan=lifespan )
+    lifespan=lifespan)
 
 origins = [
     "http://localhost:3000",
@@ -60,6 +62,10 @@ app.mount(
 
 # Регистрация роутеров
 register_routers(app)
+
+# запуск админ-панели
+create_admin_panel(app)
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="192.168.8.163", port=8000, reload=True)

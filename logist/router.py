@@ -11,6 +11,15 @@ from sigma_handlers.sigma_db import get_sigma_data_async
 router = APIRouter()
 
 
+
+
+
+
+
+
+
+
+
 @router.get("/download_excel", response_class=StreamingResponse, tags=["logist"])
 async def download_excel(
         start_date: Annotated[date, Query(...,
