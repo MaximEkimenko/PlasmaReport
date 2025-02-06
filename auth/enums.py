@@ -2,13 +2,14 @@
 import enum
 
 
-class UserRoles(enum.Enum):
+class UserRole(enum.Enum):
     """Роли пользователей."""
 
     USER = "Пользователь"
     LOGIST = "Логист"
     ADMIN = "Администратор"
     TECHMAN = "Технолог"
+    MASTER = "Мастер"
 
     def __str__(self) -> str:
         """Value в строку."""

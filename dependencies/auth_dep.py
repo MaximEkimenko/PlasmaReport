@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
 from auth.dao import UsersDAO
-from auth.enums import UserRoles
+from auth.enums import UserRole
 from exceptions import (
     TokenNoFound,
     NoJwtException,
@@ -90,6 +90,13 @@ async def get_current_user(token: str = Depends(get_access_token),
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
     """Проверяем права пользователя как администратора."""
-    if current_user.role == UserRoles.ADMIN:
+    if current_user.role == UserRole.ADMIN:
+        return current_user
+    raise ForbiddenException
+
+
+async def get_current_techman_user(current_user: User = Depends(get_current_user)) -> User:
+    """Проверяем права пользователя как технолога."""
+    if current_user.role == UserRole.TECHMAN:
         return current_user
     raise ForbiddenException

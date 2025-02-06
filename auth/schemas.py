@@ -4,7 +4,7 @@ from typing import Self
 
 from pydantic import Field, EmailStr, BaseModel, ConfigDict, field_validator, model_validator
 
-from auth.enums import UserRoles
+from auth.enums import UserRole
 from settings.constants import ALLOWED_DOMAINS
 from auth.password_utils import get_password_hash
 
@@ -42,9 +42,9 @@ class UserBase(EmailModel):
                             example="Иван")
     last_name: str = Field(min_length=3, max_length=20, description="Фамилия, от 3 до 20 символов",
                            example="Иванов")
-    role: UserRoles | None = Field(default=None, description="Роль пользователя. Не обязательное поле. "
+    role: UserRole | None = Field(default=None, description="Роль пользователя. Не обязательное поле. "
                                                              "По умолчанию присваивается USER.",
-                                                             example="USER")
+                                  example="USER")
 
     @field_validator("first_name", "last_name")
     def validate_first_name_last_name(cls, value: str) -> str:

@@ -1,7 +1,7 @@
 """Модели пользователей."""
 from sqlalchemy.orm import Mapped, mapped_column
 
-from auth.enums import UserRoles
+from auth.enums import UserRole
 from db.database import Base, uniq_string
 
 
@@ -12,7 +12,8 @@ class User(Base):
     last_name: Mapped[str]
     email: Mapped[uniq_string]
     password: Mapped[str]
-    role: Mapped[UserRoles] = mapped_column(default=UserRoles.USER)
+    is_superuser: Mapped[bool] = mapped_column(default=False, nullable=True)
+    role: Mapped[UserRole] = mapped_column(default=UserRole.USER)
 
     def __repr__(self) -> str:
         """Строковое представление."""

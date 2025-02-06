@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from openpyxl import Workbook
 
-from sigma_handlers.sigma_db import get_sigma_data
+from sigma_handlers.sigma_utils import get_sigma_data
 
 
 def create_excel(data: list) -> io.BytesIO:

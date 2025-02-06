@@ -1,4 +1,4 @@
-"""DAO приложения auth."""
+"""DAO сервиса auth."""
 from auth.models import User
 from db.base_dao import BaseDAO
 
