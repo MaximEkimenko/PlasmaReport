@@ -9,33 +9,11 @@ full_table = "PIP"  # таблица со всеми данными касате
 sigma_users_table = "Users"  # таблица с пользователями sigma
 
 
-# запрос на получение данных программ(сз) по всем программам во временном интервале
+# запрос на получение имён программ(сз) созданных во временном интервале
 programs_name_query = f"""
             SELECT
-            ProgramName,
-            RepeatID,           
-            UsedArea,
-            ScrapFraction,
-            MachineName,
-            CuttingTime,
-            PierceQty,
-            PostDateTime,
-            Material,
-            Thickness,
-            SheetLength,
-            SheetWidth,
-            ArchivePacketID,
-            TimeLineID,
-            Comment,
-            PostedByUserID,
-            dbo.{sigma_users_table}.UserName,
-            dbo.{sigma_users_table}.UserFirstName,
-            dbo.{sigma_users_table}.UserLastName,
-            dbo.{sigma_users_table}.UserEMail,
-            dbo.{sigma_users_table}.LastLoginDate
+            ProgramName
             FROM dbo.{program_table}
-            INNER JOIN dbo.{sigma_users_table}
-            ON dbo.{program_table}.PostedByUserID=dbo.{sigma_users_table}.userid
             WHERE PostDateTime > ? --start_date
             AND PostDateTime < ? --end_date
             ORDER BY PostDateTime DESC
@@ -78,7 +56,7 @@ parts_by_program_query = f"""
             WOState,
             DueDate,
             RevisionNumber,
-            PK_PIP,
+            PK_PIP
             FROM dbo.{full_table}
             WHERE ProgramName = ? --program_name
             """
@@ -111,67 +89,135 @@ parts_by_wo_query = f"""
             """
 
 
-
+def create_placeholders_params_query(placeholders):
+    """Создание текста запроса с подстановкой вопросительных знаков для параметров. """
+    return f"""
+            SELECT 
+            pr.ProgramName,
+            
+            pr.RepeatID as RepeatIDProgram,
+            p.RepeatID as RepeatIDPart,
+            
+            pr.UsedArea,
+            
+            pr.ScrapFraction,
+            pr.MachineName,
+            
+            pr.CuttingTime as CuttingTimeProgram,
+            p.CuttingTime as CuttingTimePart,
+            p.TotalCuttingTime,
+            p.CuttingLength,
+            
+            pr.PostDateTime,
+            pr.Material,
+            pr.SheetLength,
+            pr.SheetWidth,
+            pr.ArchivePacketID,
+            pr.TimeLineID,
+            pr.Comment,
+            pr.PostedByUserID,
+            pr.UsedArea,
+            pr.UsedArea,
+            
+            us.UserName,
+            us.UserFirstName,
+            us.UserLastName,
+            us.UserEMail,
+            us.LastLoginDate,
+            
+            w.WONumber,
+            w.CustomerName,
+            w.WODate,
+            w.WOData1,
+            w.WOData2,
+            w.DateCreated,
+            w.OrderDate,
+            
+            p.PartName,
+            p.QtyInProcess,
+            p.PartLength,
+            p.PartWidth,
+            p.RectArea,
+            p.TrueArea,
+            p.TrueWeight,
+            p.RectWeight,
+            
+            p.PierceQty,
+            p.MasterPartQty,
+            p.WOState,
+            p.DueDate,
+            p.RevisionNumber,
+            p.PK_PIP       
+            
+        FROM 
+            dbo.{full_table} p
+        INNER JOIN 
+            dbo.{work_orders_table} w
+        ON 
+            p.WONumber = w.WONumber
+        INNER JOIN 
+            dbo.{program_table} pr
+        ON 
+            p.ProgramName = pr.ProgramName
+        INNER JOIN 
+            dbo.{sigma_users_table} us
+        ON 
+            pr.PostedByUserID = us.userid
+        WHERE  
+            p.ProgramName IN ({placeholders});
+        """
 
 
 # TODO DEPRECATED
 # запрос на данные в интервале
-main_query = """
-            SELECT
-            PartName,
-            OrderDate,
-            DateCreated,
-            Cuttingtime,
-            Material,
-            Thickness,
-            NetArea,
-            Netweight,
-            RectArea,
-            RectWeight,
-            QtyRemaining,
-            WODate,
-            dbo.PartWithQtyInProcess.QtyCompleted,
-            dbo.PartWithQtyInProcess.QtyInProcess,
-            dbo.PartWithQtyInProcess.QtyOrdered,
-            dbo.PartWithQtyInProcess.WONumber
-            FROM dbo.WorkOrderWithPartQuantities
-            INNER JOIN dbo.PartWithQtyInProcess
-            ON dbo.PartWithQtyInProcess.WONumber=dbo.WorkOrderWithPartQuantities.WONumber
-            WHERE OrderDate > ? --start_date
-            AND OrderDate < ? --end_date
-            ORDER BY DateCreated
-            """
+# main_query = """
+#             SELECT
+#             PartName,
+#             OrderDate,
+#             DateCreated,
+#             Cuttingtime,
+#             Material,
+#             Thickness,
+#             NetArea,
+#             Netweight,
+#             RectArea,
+#             RectWeight,
+#             QtyRemaining,
+#             WODate,
+#             dbo.PartWithQtyInProcess.QtyCompleted,
+#             dbo.PartWithQtyInProcess.QtyInProcess,
+#             dbo.PartWithQtyInProcess.QtyOrdered,
+#             dbo.PartWithQtyInProcess.WONumber
+#             FROM dbo.WorkOrderWithPartQuantities
+#             INNER JOIN dbo.PartWithQtyInProcess
+#             ON dbo.PartWithQtyInProcess.WONumber=dbo.WorkOrderWithPartQuantities.WONumber
+#             WHERE OrderDate > ? --start_date
+#             AND OrderDate < ? --end_date
+#             ORDER BY DateCreated
+#             """
+#
+# # запрос на получение списка колонок
+# column_query = """
+#             SELECT
+#             PartName,
+#             OrderDate,
+#             DateCreated,
+#             Cuttingtime,
+#             Material,
+#             Thickness,
+#             NetArea,
+#             Netweight,
+#             RectArea,
+#             RectWeight,
+#             QtyRemaining,
+#             WODate,
+#             dbo.WorkOrderWithPartQuantities.QtyCompleted,
+#             dbo.WorkOrderWithPartQuantities.QtyInProcess,
+#             dbo.WorkOrderWithPartQuantities.QtyOrdered,
+#             dbo.WorkOrderWithPartQuantities.WONumber
+#             FROM dbo.PartWithQtyInProcess
+#             INNER JOIN dbo.WorkOrderWithPartQuantities
+#             ON dbo.PartWithQtyInProcess.WONumber=dbo.WorkOrderWithPartQuantities.WONumber
+#             ORDER BY DateCreated DESC
+#             """
 
-# запрос на получение списка колонок
-column_query = """
-            SELECT
-            PartName,
-            OrderDate,
-            DateCreated,
-            Cuttingtime,
-            Material,
-            Thickness,
-            NetArea,
-            Netweight,
-            RectArea,
-            RectWeight,
-            QtyRemaining,
-            WODate,
-            dbo.WorkOrderWithPartQuantities.QtyCompleted,
-            dbo.WorkOrderWithPartQuantities.QtyInProcess,
-            dbo.WorkOrderWithPartQuantities.QtyOrdered,
-            dbo.WorkOrderWithPartQuantities.WONumber
-            FROM dbo.PartWithQtyInProcess
-            INNER JOIN dbo.WorkOrderWithPartQuantities
-            ON dbo.PartWithQtyInProcess.WONumber=dbo.WorkOrderWithPartQuantities.WONumber
-            ORDER BY DateCreated DESC
-            """
-
-
-
-
-# custom_query
-custom_query = """
-
-
-"""

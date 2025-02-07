@@ -10,6 +10,7 @@ from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from auth.models import User
 from auth.schemas import SUserInfo
@@ -188,3 +189,24 @@ class BaseDAO(Generic[T]):
             log.info(f"Обновлено {updated_count} записей")
             await self._session.flush()
             return updated_count
+
+    # TODO проверить! Залогировать.
+    async def upsert_records(self, records: list[dict], conflict_field: str) -> None:
+        """Функция для вставки или обновления записей в SQLite."""
+        if not records:
+            return
+
+        # Создаем запрос на вставку
+        insert_stmt = sqlite_insert(self.model).values(records)
+
+        # Обновление существующих записей при конфликте
+        upsert_stmt = insert_stmt.on_conflict_do_update(
+            index_elements=[conflict_field],
+            set_={"name": insert_stmt.excluded.name, "value": insert_stmt.excluded.value},
+            # set_=dict(name=insert_stmt.excluded.name, value=insert_stmt.excluded.value),
+        )
+
+
+        # Выполнение запроса
+        await self._session.execute(upsert_stmt)
+        await self._session.commit()

@@ -3,17 +3,17 @@ import datetime
 
 from decimal import Decimal
 
-from enums import WoStatus, PartStatus, ProgramStatus
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
-from db.database import Base
+from db.database import Base, uniq_string
+from techman.enums import WoStatus, PartStatus, ProgramStatus
 
 
 class Program(Base):
     """Модель программ плазменной резки."""
 
-    program_name: Mapped[str]  # ProgramName
+    program_name: Mapped[uniq_string]  # ProgramName
     repeat_id: Mapped[str]  # RepeatID
     user_area: Mapped[float]  # UsedArea
     scrap_fraction: Mapped[float]  # ScrapFraction
@@ -29,11 +29,12 @@ class Program(Base):
     time_line_id: Mapped[int]  # TimeLineID
     comment: Mapped[str] = mapped_column(default="")  # Comment
     post_by_user_id: Mapped[int]  # PostByUserID
+    # techman user data from user_table
     user_name: Mapped[str] = mapped_column(default="")  # UserName
     user_first_name: Mapped[str] = mapped_column(default="")  # UserFirstName
     user_last_name: Mapped[str] = mapped_column(default="")  # UserLastName
     user_email: Mapped[str] = mapped_column(default="")  # UserEmail
-    user_last_login_date: Mapped[datetime] = mapped_column(TIMESTAMPnullable=True)  # UserLastLoginDate
+    user_last_login_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # LastLoginDate
 
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
     program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED)
@@ -42,12 +43,12 @@ class Program(Base):
 class WO(Base):
     """Модель номеров заказов на плазменную резку."""
 
-    wo_number: Mapped[str]  # WONumber
+    wo_number: Mapped[uniq_string]  # WONumber
     customer_name: Mapped[str]  # CustomerName
     wo_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # WODate
     order_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # OrderDate
-    wo_data_1: Mapped[str] = mapped_column(default="")  # WOData1
-    wo_data_2: Mapped[str] = mapped_column(default="")  # WOData2
+    wo_data_1: Mapped[str] = mapped_column(default="", nullable=True)  # WOData1
+    wo_data_2: Mapped[str] = mapped_column(default="", nullable=True)  # WOData2
     date_created: Mapped[datetime] = mapped_column(TIMESTAMP)  # DateCreated
 
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="wo")
@@ -81,5 +82,5 @@ class Part(Base):
     wo_state: Mapped[str]  # WOState
     due_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # DueDate
     revision_number: Mapped[str]  # RevisionNumber
-    pk_pip: Mapped[str]  # PKPip
+    pk_pip: Mapped[str]  # PK_PIP
     part_status: Mapped[PartStatus] = mapped_column(default=PartStatus.UNASSIGNED)
