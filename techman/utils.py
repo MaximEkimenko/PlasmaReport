@@ -1,12 +1,17 @@
 """Утилиты сервиса Techman."""
+import asyncio
 import datetime
 
 from operator import itemgetter
+from collections import defaultdict
 
 from logger_config import log
 from sigma_handlers.sigma_db import get_parts_data_by_programs
 
 type SeparatedDataList = dict[str, list[dict[str, str | datetime.datetime]]]
+
+
+# from techman.schemas import SPartsDataList, SProgramDataList, SWoDataList
 
 
 async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
@@ -17,7 +22,6 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
     # TODO вынести словари в отдельный config?
     program_dict_keys = ("ProgramName",
                          "RepeatIDProgram",
-                         "RepeatIDPart",
                          "UsedArea",
                          "ScrapFraction",
                          "MachineName",
@@ -37,7 +41,8 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
                          "UserLastName",
                          "UserEMail",
                          "LastLoginDate",
-
+                         "Thickness",
+                         "PierceQtyProgram",
                          )
     wo_dict_keys = ("WONumber",
                     "WODate",
@@ -63,12 +68,15 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
                       "TrueArea",
                       "TrueWeight",
                       "RectWeight",
-                      "PierceQty",
                       "MasterPartQty",
                       "WOState",
                       "DueDate",
                       "RevisionNumber",
                       "PK_PIP",
+                      # "RepeatIDPart",
+                      "Thickness",
+                      "PierceQtyPart",
+                      "NestedArea",
                       )
 
     programs = []
@@ -78,26 +86,26 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
     # Множества для уникальности
     seen_programs = set()
     seen_wos = set()
-    seen_parts = set()
-
+    max_programs = defaultdict(dict)
     for line_dict in data_programs_wos_parts_list:
-        # Создаем программы
+        # Programs
         program_frozenset = frozenset((key, line_dict[key]) for key in program_dict_keys)
         if program_frozenset not in seen_programs:
             seen_programs.add(program_frozenset)
             programs.append(dict(zip(program_dict_keys, itemgetter(*program_dict_keys)(line_dict), strict=False)))
 
-        # Создаем WOs
+        # WOs
         wo_frozenset = frozenset((key, line_dict[key]) for key in wo_dict_keys)
         if wo_frozenset not in seen_wos:
             seen_wos.add(wo_frozenset)
             wos.append(dict(zip(wo_dict_keys, itemgetter(*wo_dict_keys)(line_dict), strict=False)))
 
-        # Создаем части
-        part_frozenset = frozenset((key, line_dict[key]) for key in part_dict_keys)
-        if part_frozenset not in seen_parts:
-            seen_parts.add(part_frozenset)
-            parts.append(dict(zip(part_dict_keys, itemgetter(*part_dict_keys)(line_dict), strict=False)))
+        # Parts
+        program_name = line_dict.get("ProgramName")
+        repeat_id_program = line_dict.get("RepeatIDProgram")
+        # определение записи с максимальным RepeatIDProgram
+        if not max_programs[program_name] or repeat_id_program > max_programs[program_name]["RepeatIDProgram"]:
+            max_programs[program_name] = line_dict
 
         # Проверка на полноту данных
         if not all(key in line_dict for key in program_dict_keys + wo_dict_keys + part_dict_keys):
@@ -105,8 +113,20 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
             log.error("Ошибка при разделении данных sigma на словари для PlasmaReport.")
             raise ValueError
 
+    programs = [
+        dict(zip(program_dict_keys, itemgetter(*program_dict_keys)(line_dict), strict=False))
+        for line_dict in max_programs.values()
+    ]
+
     return {"programs": programs, "wos": wos, "parts": parts}
 
+
 if __name__ == "__main__":
-    _active_programs = ["SP SS- 1-142211", "SP- 3-142202", "SP RIFL- 4-136491", "S390-20-134553"]
-    # pprint(asyncio.run(create_data_to_db(_active_programs)))
+    # _active_programs = ["SP SS- 1-142211", "SP- 3-142202", "SP RIFL- 4-136491", "S390-20-134553"]
+    _active_programs = ["SP- 4-142921",
+                        "GS-20-142881",
+                        "GS-18-142861",
+                        ]
+    data = (asyncio.run(create_data_to_db(_active_programs)))
+    # pprint(data["programs"])
+    # pprint(data["wos"])

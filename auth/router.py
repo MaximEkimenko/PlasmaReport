@@ -60,7 +60,6 @@ async def auth_user(response: Response,
         raise IncorrectEmailOrPasswordException
     # установка jwt токенов доступа
     set_tokens(response, user.id)
-
     return {
         "ok": True,
         "message": "Авторизация успешна!",

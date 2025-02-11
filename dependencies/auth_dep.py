@@ -47,10 +47,12 @@ async def check_refresh_token(token: str = Depends(get_refresh_token),
             algorithms=[settings.ALGORITHM],
         )
         user_id = payload.get("sub")
+
         if not user_id:
             raise NoJwtException
 
         user = await UsersDAO(session).find_one_or_none_by_id(data_id=int(user_id))
+
         if not user:
             raise NoJwtException
 

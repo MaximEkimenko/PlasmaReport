@@ -33,15 +33,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[dict, None]:  # noqa ARG001
 
 
 app = FastAPI(
-    title="Приложение для учёта сменных заданий усановок пламзенной резки",
+    title="Приложение для учёта сменных заданий установок плазменной резки",
     description="there is no description yet.",
     version="0.0.1",
     lifespan=lifespan)
 
 origins = [
+    "http://localhost:5173",
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost,"
     "http://192.168.8.163:3000",
+    "http://192.168.8.163:5173",
+    "http://192.168.8.146:3000"
+    "http://192.168.8.146:5173",
+    "http://192.168.8.146",
+    "http://127.0.0.1:3000",
+    "192.168.8.146:3000",
+    "192.168.8.146",
 ]
 
 # Добавляем CORS Middleware
@@ -49,8 +57,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,  # Разрешённые домены
     allow_credentials=True,  # Разрешить передачу куки
-    allow_methods=["*"],  # Разрешённые HTTP-методы (GET, POST и т.д.)
-    allow_headers=["*"],  # Разрешённые заголовки (Authorization и др.)
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Разрешённые HTTP-методы
+    allow_headers=["*"],
 )
 
 static_path = BASEDIR / Path("static")
@@ -65,7 +73,6 @@ register_routers(app)
 
 # запуск админ-панели
 create_admin_panel(app)
-
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="192.168.8.163", port=8000, reload=True)

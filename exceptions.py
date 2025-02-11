@@ -66,6 +66,16 @@ TokenInvalidFormatException = HTTPException(
     detail="Неверный формат токена. Ожидается 'Bearer <токен>'",
 )
 
+InvalidSigmaData = HTTPException(
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    detail="Неверный формат данных Sigma.",
+)
+
+AlchemyDatabaseError = HTTPException(
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    detail="Ошибка записи в БД.",
+)
+
 
 class WrongTranslateSettingsError(Exception):
     """Исключение для валидации словаря перевода колонок БД."""

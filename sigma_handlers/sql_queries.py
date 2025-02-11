@@ -96,12 +96,13 @@ def create_placeholders_params_query(placeholders):
             pr.ProgramName,
             
             pr.RepeatID as RepeatIDProgram,
-            p.RepeatID as RepeatIDPart,
+            -- p.RepeatID as RepeatIDPart,
             
             pr.UsedArea,
             
             pr.ScrapFraction,
             pr.MachineName,
+            pr.Thickness,
             
             pr.CuttingTime as CuttingTimeProgram,
             p.CuttingTime as CuttingTimePart,
@@ -141,8 +142,10 @@ def create_placeholders_params_query(placeholders):
             p.TrueArea,
             p.TrueWeight,
             p.RectWeight,
+            p.NestedArea,
             
-            p.PierceQty,
+            p.PierceQty as PierceQtyPart,
+            pr.PierceQty as PierceQtyProgram,
             p.MasterPartQty,
             p.WOState,
             p.DueDate,

@@ -2,9 +2,10 @@
 import enum
 
 
-class ProgramStatus(enum.Enum):
+class ProgramStatus(enum.StrEnum):
     """Статусы программы(сменного задания)."""
 
+    NEW = "новая"
     CREATED = "создана"  # TODO Unused in MVP назначается автоматически (запросом по расписанию?)
     UNASSIGNED = "не распределена"
     ASSIGNED = "распределена"
@@ -13,7 +14,7 @@ class ProgramStatus(enum.Enum):
     ARCHIVED = "заархивирована"
 
 
-class WoStatus(enum.Enum):
+class WoStatus(enum.StrEnum):
     """Статусы заказа."""
 
     CREATED = "создан"
@@ -21,7 +22,7 @@ class WoStatus(enum.Enum):
     FINISHED = "завершен"
 
 
-class PartStatus(enum.Enum):
+class PartStatus(enum.StrEnum):
     """Статусы деталей."""
 
     UNASSIGNED = "не распределена"
