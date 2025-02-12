@@ -28,7 +28,6 @@ class CommonPartData(BaseModel):
     TotalCuttingTime: Decimal = Field(description="Общее время", example=Decimal("10.2"))
     TrueArea: float = Field(description="Площадь True поверхности", example=10.2)
     TrueWeight: float = Field(description="Вес True поверхности", example=10.2)
-    RepeatIDPart: int = Field(description="Количество повторов детали", example=1)
     Thickness: float = Field(description="Толщина", example=10.2)
     NestedArea: float = Field(description="Площадь Nested поверхности", example=10.2)
 
@@ -90,3 +89,6 @@ class SWoData(BaseModel):
     WODate: datetime.datetime = Field(description="Дата заказа",
                                       example=datetime.datetime.now(datetime.UTC))
     WONumber: str = Field(description="Номер заказа", example="Z325")
+
+
+

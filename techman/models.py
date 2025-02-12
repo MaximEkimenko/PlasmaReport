@@ -33,50 +33,16 @@ class Program(Base):
     UserName: Mapped[str] = mapped_column(default="")  # UserName
     UserFirstName: Mapped[str] = mapped_column(default="")  # UserFirstName
     UserLastName: Mapped[str] = mapped_column(default="")  # UserLastName
-    UserEmail: Mapped[str] = mapped_column(default="")  # UserEmail
+    UserEMail: Mapped[str] = mapped_column(default="", nullable=True)  # UserEmail
     LastLoginDate: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # LastLoginDate
 
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
     program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED, index=True)
-    # program_name: Mapped[uniq_string]  # ProgramName
-    # repeat_id: Mapped[str]  # RepeatID
-    # user_area: Mapped[float]  # UsedArea
-    # scrap_fraction: Mapped[float]  # ScrapFraction
-    # machine_name: Mapped[str]  # MachineName
-    # cutting_time: Mapped[Decimal]  # CuttingTime
-    # pierce_qty: Mapped[int]  # PierceQuantity
-    # post_date_time: Mapped[datetime] = mapped_column(TIMESTAMP)  # PostDateTime
-    # material: Mapped[str]  # Material
-    # thickness: Mapped[float]  # Thickness
-    # sheet_length: Mapped[float]  # SheetLength
-    # sheet_width: Mapped[float]  # SheetWidth
-    # archive_packet_id: Mapped[int]  # ArchivePacketID
-    # time_line_id: Mapped[int]  # TimeLineID
-    # comment: Mapped[str] = mapped_column(TEXT, default="")  # Comment
-    # post_by_user_id: Mapped[int]  # PostByUserID
-    # # techman user data from user_table
-    # user_name: Mapped[str] = mapped_column(default="")  # UserName
-    # user_first_name: Mapped[str] = mapped_column(default="")  # UserFirstName
-    # user_last_name: Mapped[str] = mapped_column(default="")  # UserLastName
-    # user_email: Mapped[str] = mapped_column(default="")  # UserEmail
-    # user_last_login_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # LastLoginDate
-    # parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
-    # program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED)
 
 
 class WO(Base):
     """Модель номеров заказов на плазменную резку."""
 
-    # wo_number: Mapped[uniq_string]  # WONumber
-    # customer_name: Mapped[str]  # CustomerName
-    # wo_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # WODate
-    # order_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # OrderDate
-    # wo_data_1: Mapped[str] = mapped_column(default="", nullable=True)  # WOData1
-    # wo_data_2: Mapped[str] = mapped_column(default="", nullable=True)  # WOData2
-    # date_created: Mapped[datetime] = mapped_column(TIMESTAMP)  # DateCreated
-    #
-    # parts: Mapped[list["Part"]] = relationship("Part", back_populates="wo_number")
-    # wo_status: Mapped[WoStatus] = mapped_column(default=WoStatus.CREATED)
     WONumber: Mapped[uniq_string] = mapped_column(index=True)  # WONumber
     CustomerName: Mapped[str]  # CustomerName
     WODate: Mapped[datetime] = mapped_column(TIMESTAMP)  # WODate
@@ -93,10 +59,10 @@ class Part(Base):
     """Модель деталей заказа на плазменную резку."""
 
     wo_number_id: Mapped[int] = mapped_column(ForeignKey("wo.id"))
-    wo_number: Mapped[WO] = relationship("WO", back_populates="parts")
+    wo_number: Mapped[WO] = relationship("WO", back_populates="parts", lazy="joined")
 
     program_id: Mapped[int] = mapped_column(ForeignKey("program.id"))
-    program: Mapped[Program] = relationship("Program", back_populates="parts")
+    program: Mapped[Program] = relationship("Program", back_populates="parts", lazy="joined")
 
     PartName: Mapped[str] = mapped_column(index=True)  # PartName
     # RepeatIDPart: Mapped[int] = mapped_column(nullable=True)  # RepeatID

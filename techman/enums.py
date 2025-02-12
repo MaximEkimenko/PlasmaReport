@@ -6,7 +6,7 @@ class ProgramStatus(enum.StrEnum):
     """Статусы программы(сменного задания)."""
 
     NEW = "новая"
-    CREATED = "создана"  # TODO Unused in MVP назначается автоматически (запросом по расписанию?)
+    CREATED = "создана"
     UNASSIGNED = "не распределена"
     ASSIGNED = "распределена"
     ACTIVE = "в работе"  # TODO Unused in MVP назначает оператор взятием в работу на своём устройстве

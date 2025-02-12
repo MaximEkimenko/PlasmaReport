@@ -1,20 +1,15 @@
 """Утилиты сервиса Techman."""
 import asyncio
-import datetime
 
+from typing import Any
 from operator import itemgetter
 from collections import defaultdict
 
 from logger_config import log
 from sigma_handlers.sigma_db import get_parts_data_by_programs
 
-type SeparatedDataList = dict[str, list[dict[str, str | datetime.datetime]]]
 
-
-# from techman.schemas import SPartsDataList, SProgramDataList, SWoDataList
-
-
-async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
+async def create_data_to_db(active_programs: list[str]) -> dict[str, list[dict[str, Any]]]:
     """Создание списков словарей данных готовых к записи в БД PlasmaReport."""
     data_programs_wos_parts_list = await get_parts_data_by_programs(active_programs)
 
@@ -84,16 +79,21 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
     parts = []
 
     # Множества для уникальности
-    seen_programs = set()
+    # seen_programs = set()
     seen_wos = set()
+    seen_parts = set()
     max_programs = defaultdict(dict)
     for line_dict in data_programs_wos_parts_list:
         # Programs
-        program_frozenset = frozenset((key, line_dict[key]) for key in program_dict_keys)
-        if program_frozenset not in seen_programs:
-            seen_programs.add(program_frozenset)
-            programs.append(dict(zip(program_dict_keys, itemgetter(*program_dict_keys)(line_dict), strict=False)))
-
+        # program_frozenset = frozenset((key, line_dict[key]) for key in program_dict_keys)
+        # if program_frozenset not in seen_programs:
+        #     seen_programs.add(program_frozenset)
+        #     programs.append(dict(zip(program_dict_keys, itemgetter(*program_dict_keys)(line_dict), strict=False)))
+        program_name = line_dict.get("ProgramName")
+        repeat_id_program = line_dict.get("RepeatIDProgram")
+        # определение записи с максимальным RepeatIDProgram
+        if not max_programs[program_name] or repeat_id_program > max_programs[program_name]["RepeatIDProgram"]:
+            max_programs[program_name] = line_dict
         # WOs
         wo_frozenset = frozenset((key, line_dict[key]) for key in wo_dict_keys)
         if wo_frozenset not in seen_wos:
@@ -101,11 +101,10 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
             wos.append(dict(zip(wo_dict_keys, itemgetter(*wo_dict_keys)(line_dict), strict=False)))
 
         # Parts
-        program_name = line_dict.get("ProgramName")
-        repeat_id_program = line_dict.get("RepeatIDProgram")
-        # определение записи с максимальным RepeatIDProgram
-        if not max_programs[program_name] or repeat_id_program > max_programs[program_name]["RepeatIDProgram"]:
-            max_programs[program_name] = line_dict
+        part_frozenset = frozenset((key, line_dict[key]) for key in part_dict_keys)
+        if part_frozenset not in seen_parts:
+            seen_parts.add(part_frozenset)
+            parts.append(dict(zip(part_dict_keys, itemgetter(*part_dict_keys)(line_dict), strict=False)))
 
         # Проверка на полноту данных
         if not all(key in line_dict for key in program_dict_keys + wo_dict_keys + part_dict_keys):
@@ -123,9 +122,7 @@ async def create_data_to_db(active_programs: list[str]) -> SeparatedDataList:
 
 if __name__ == "__main__":
     # _active_programs = ["SP SS- 1-142211", "SP- 3-142202", "SP RIFL- 4-136491", "S390-20-134553"]
-    _active_programs = ["SP- 4-142921",
-                        "GS-20-142881",
-                        "GS-18-142861",
+    _active_programs = ["SP RIFL- 4-142696",
                         ]
     data = (asyncio.run(create_data_to_db(_active_programs)))
     # pprint(data["programs"])

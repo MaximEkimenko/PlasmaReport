@@ -11,11 +11,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.models import User
-from auth.schemas import SUserInfo
+from db.database import Base
 from logger_config import log
 
-from .database import Base
+# from .database import Base
 
 T = TypeVar("T", bound=Base)
 
@@ -32,7 +31,7 @@ class BaseDAO(Generic[T]):
             msg = "Модель должна быть указана в дочернем классе"
             raise ValueError(msg)
 
-    async def find_one_or_none_by_id(self, data_id: int) -> User:
+    async def find_one_or_none_by_id(self, data_id: int) -> T:
         """Получение одной записи по id."""
         try:
             query = select(self.model).filter_by(id=data_id)
@@ -62,7 +61,7 @@ class BaseDAO(Generic[T]):
             log.info(log_message)
             return record
 
-    async def find_all(self, filters: BaseModel | None = None) -> list[SUserInfo]:
+    async def find_all(self, filters: BaseModel | None = None) -> list[T]:
         """Получение всех записей по фильтру схемы pydentic."""
         filter_dict = filters.model_dump(exclude_unset=True) if filters else {}
         log.info(f"Поиск всех записей {self.model.__name__} по фильтрам: {filter_dict}")
@@ -179,6 +178,7 @@ class BaseDAO(Generic[T]):
                     .filter_by(id=record_dict["id"])
                     .values(**update_data)
                 )
+
                 result = await self._session.execute(stmt)
                 updated_count += result.rowcount
         except SQLAlchemyError as e:
@@ -189,23 +189,29 @@ class BaseDAO(Generic[T]):
             await self._session.flush()
             return updated_count
 
-    # # TODO проверить! Залогировать.
-    # async def upsert_records(self, records: list[dict], conflict_field: str) -> None:
-    #     """Функция для вставки или обновления записей в SQLite."""
-    #     if not records:
-    #         return
-    #
-    #     # Создаем запрос на вставку
-    #     insert_stmt = sqlite_insert(self.model).values(records)
-    #
-    #     # Обновление существующих записей при конфликте
-    #     upsert_stmt = insert_stmt.on_conflict_do_update(
-    #         index_elements=[conflict_field],
-    #         set_={"name": insert_stmt.excluded.name, "value": insert_stmt.excluded.value},
-    #         # set_=dict(name=insert_stmt.excluded.name, value=insert_stmt.excluded.value),
-    #     )
-    #
-    #
-    #     # Выполнение запроса
-    #     await self._session.execute(upsert_stmt)
-    #     await self._session.commit()
+    async def bulk_update_by_field_name(self, records: list[dict], update_field_name: str) -> int:
+        """Групповое обновление записей по имени поля."""
+        log.info(f"Массовое обновление записей {self.model.__name__}")
+        try:
+            updated_count = 0
+            for record_dict in records:
+                if update_field_name not in record_dict:
+                    continue
+
+                update_data = {field_name: field_value for field_name, field_value in record_dict.items()}  # noqa
+                stmt = (
+                    sqlalchemy_update(self.model)
+                    .filter_by(**{update_field_name: record_dict[update_field_name]})
+                    .values(**update_data)
+                )
+                result = await self._session.execute(stmt)
+                updated_count += result.rowcount
+        except SQLAlchemyError as e:
+            log.error(f"Ошибка при массовом обновлении: {e}")
+            raise
+        else:
+            log.info(f"Обновлено {updated_count} записей")
+            await self._session.flush()
+            return updated_count
+
+

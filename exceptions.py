@@ -77,6 +77,27 @@ AlchemyDatabaseError = HTTPException(
 )
 
 
+class WrongProgramStatusError(HTTPException):
+    """Исключение для необрабатываемого endpoint статуса программы."""
+
+    def __init__(self, detail: str, status_code: int = status.HTTP_409_CONFLICT) -> None:
+        """Инициализация исключения."""
+        super().__init__(status_code=status_code, detail=detail)
+
+
+class ExistingDatabaseEntityError(WrongProgramStatusError):
+    """Исключение для попытки записи в БД уже существующей записи."""
+
+
+
+
+# WrongProgramStatus = HTTPException(
+#     status_code=status.HTTP_409_CONFLICT,
+#     detail="Неверный статус программы.",
+# )
+
+
+
 class WrongTranslateSettingsError(Exception):
     """Исключение для валидации словаря перевода колонок БД."""
 

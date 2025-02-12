@@ -9,81 +9,92 @@ full_table = "PIP"  # таблица со всеми данными касате
 sigma_users_table = "Users"  # таблица с пользователями sigma
 
 
-# запрос на получение имён программ(сз) созданных во временном интервале
+# запрос на получение имён программ(сз) созданных во временном интервале выбираются только программы,
+# которые есть в program_table и full_table
 programs_name_query = f"""
-            SELECT
-            ProgramName
-            FROM dbo.{program_table}
-            WHERE PostDateTime > ? --start_date
-            AND PostDateTime < ? --end_date
-            ORDER BY PostDateTime DESC
-            """
+           SELECT 
+                p.ProgramName
+            FROM 
+                dbo.{program_table} p
+            WHERE 
+                p.PostDateTime > ? -- start_date
+                AND p.PostDateTime < ? -- end_date
+                AND EXISTS (
+                    SELECT 1
+                    FROM dbo.{full_table} f
+                    WHERE f.ProgramName = p.ProgramName
+                )
+            GROUP BY 
+                p.ProgramName
+            ORDER BY 
+                MAX(p.PostDateTime) DESC
+                    """
 
 work_orders_query = f"""
             SELECT
-            WONumber,
-            CustomerName,
-            WODate,
-            OrderDate,
-            WOData1,
-            WOData2,
-            DateCreated
+                WONumber,
+                CustomerName,
+                WODate,
+                OrderDate,
+                WOData1,
+                WOData2,
+                DateCreated
             FROM dbo.{work_orders_table}
-            WHERE DateCreated > ? --start_date
-            AND DateCreated < ? --end_date
+                WHERE DateCreated > ? --start_date
+                    AND DateCreated < ? --end_date
             ORDER BY DateCreated DESC
             """
 
 parts_by_program_query = f"""
             SELECT
-            WONumber,
-            ProgramName,
-            PartName,
-            RepeatID,
-            QtyInProcess,
-            PartLength,
-            PartWidth,
-            TrueArea,
-            RectArea,
-            TrueWeight,
-            RectWeight,
-            CuttingTime,
-            CuttingLength,
-            PierceQty,
-            NestedArea,
-            TotalCuttingTime,
-            MasterPartQty,
-            WOState,
-            DueDate,
-            RevisionNumber,
-            PK_PIP
+                WONumber,
+                ProgramName,
+                PartName,
+                RepeatID,
+                QtyInProcess,
+                PartLength,
+                PartWidth,
+                TrueArea,
+                RectArea,
+                TrueWeight,
+                RectWeight,
+                CuttingTime,
+                CuttingLength,
+                PierceQty,
+                NestedArea,
+                TotalCuttingTime,
+                MasterPartQty,
+                WOState,
+                DueDate,
+                RevisionNumber,
+                PK_PIP
             FROM dbo.{full_table}
             WHERE ProgramName = ? --program_name
             """
 
 parts_by_wo_query = f"""
             SELECT
-            WONumber,
-            PartName,
-            ProgramName,
-            RepeatID,
-            QtyInProcess,
-            PartLength,
-            PartWidth,
-            TrueArea,
-            RectArea,
-            TrueWeight,
-            RectWeight,
-            CuttingTime,
-            CuttingLength,
-            PierceQty,
-            NestedArea,
-            TotalCuttingTime,
-            MasterPartQty,
-            WOState,
-            DueDate,
-            RevisionNumber,
-            PK_PIP
+                WONumber,
+                PartName,
+                ProgramName,
+                RepeatID,
+                QtyInProcess,
+                PartLength,
+                PartWidth,
+                TrueArea,
+                RectArea,
+                TrueWeight,
+                RectWeight,
+                CuttingTime,
+                CuttingLength,
+                PierceQty,
+                NestedArea,
+                TotalCuttingTime,
+                MasterPartQty,
+                WOState,
+                DueDate,
+                RevisionNumber,
+                PK_PIP
             FROM dbo.{full_table}
             WHERE WONumber = ? --wo_name
             """
@@ -92,7 +103,7 @@ parts_by_wo_query = f"""
 def create_placeholders_params_query(placeholders):
     """Создание текста запроса с подстановкой вопросительных знаков для параметров. """
     return f"""
-            SELECT 
+        SELECT 
             pr.ProgramName,
             
             pr.RepeatID as RepeatIDProgram,
@@ -169,58 +180,3 @@ def create_placeholders_params_query(placeholders):
         WHERE  
             p.ProgramName IN ({placeholders});
         """
-
-
-# TODO DEPRECATED
-# запрос на данные в интервале
-# main_query = """
-#             SELECT
-#             PartName,
-#             OrderDate,
-#             DateCreated,
-#             Cuttingtime,
-#             Material,
-#             Thickness,
-#             NetArea,
-#             Netweight,
-#             RectArea,
-#             RectWeight,
-#             QtyRemaining,
-#             WODate,
-#             dbo.PartWithQtyInProcess.QtyCompleted,
-#             dbo.PartWithQtyInProcess.QtyInProcess,
-#             dbo.PartWithQtyInProcess.QtyOrdered,
-#             dbo.PartWithQtyInProcess.WONumber
-#             FROM dbo.WorkOrderWithPartQuantities
-#             INNER JOIN dbo.PartWithQtyInProcess
-#             ON dbo.PartWithQtyInProcess.WONumber=dbo.WorkOrderWithPartQuantities.WONumber
-#             WHERE OrderDate > ? --start_date
-#             AND OrderDate < ? --end_date
-#             ORDER BY DateCreated
-#             """
-#
-# # запрос на получение списка колонок
-# column_query = """
-#             SELECT
-#             PartName,
-#             OrderDate,
-#             DateCreated,
-#             Cuttingtime,
-#             Material,
-#             Thickness,
-#             NetArea,
-#             Netweight,
-#             RectArea,
-#             RectWeight,
-#             QtyRemaining,
-#             WODate,
-#             dbo.WorkOrderWithPartQuantities.QtyCompleted,
-#             dbo.WorkOrderWithPartQuantities.QtyInProcess,
-#             dbo.WorkOrderWithPartQuantities.QtyOrdered,
-#             dbo.WorkOrderWithPartQuantities.WONumber
-#             FROM dbo.PartWithQtyInProcess
-#             INNER JOIN dbo.WorkOrderWithPartQuantities
-#             ON dbo.PartWithQtyInProcess.WONumber=dbo.WorkOrderWithPartQuantities.WONumber
-#             ORDER BY DateCreated DESC
-#             """
-

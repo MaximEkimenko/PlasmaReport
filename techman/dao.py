@@ -1,5 +1,5 @@
 """DAO сервиса techman."""
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from db.base_dao import BaseDAO
@@ -20,25 +20,10 @@ class ProgramDAO(BaseDAO):
         )
         return {row.ProgramName: row.id for row in result_programs}
 
-    async def find_one_or_none_by_dict(self, filters: dict) -> dict:
-        """Получение одной записи по фильтру схемы pydentic."""
-        log.info(f"Поиск одной записи {self.model.__name__} по фильтрам: {filters}")
-        try:
-            query = select(self.model).filter_by(**filters)
-            result = await self._session.execute(query)
-            record = result.scalar_one_or_none()
-        except SQLAlchemyError as e:
-            log.error(f"Ошибка при поиске записи по фильтрам {filters}: {e}")
-            raise
-        else:
-            log_message = f"Запись {'найдена' if record else 'не найдена'} по фильтрам: {filters}"
-            log.info(log_message)
-            return record
-
     async def get_programs_by_names(self, names: list[str]) -> list[dict]:
         """Получение существующих программ."""
         # TODO валидировать входящий список имён
-        query = select(Program).where(Program.ProgramName.in_(names))
+        query = select(self.model).where(self.model.ProgramName.in_(names))
 
         # Выполнение запроса
         result = await self._session.execute(query)
@@ -46,6 +31,31 @@ class ProgramDAO(BaseDAO):
         # Получение всех записей
         programs = result.scalars().all()
         return [program.to_dict() for program in programs]
+
+    async def bulk_update_by_field_name(self, records: list[dict], update_field_name: str) -> int:
+        """Групповое обновление записей по имени поля."""
+        log.info(f"Массовое обновление записей {self.model.__name__}")
+        try:
+            updated_count = 0
+            for record_dict in records:
+                if update_field_name not in record_dict:
+                    continue
+
+                update_data = {field_name: field_value for field_name, field_value in record_dict.items()}  # noqa
+                stmt = (
+                    update(self.model)
+                    .filter_by(**{update_field_name: record_dict[update_field_name]})
+                    .values(**update_data)
+                )
+                result = await self._session.execute(stmt)
+                updated_count += result.rowcount
+        except SQLAlchemyError as e:
+            log.error(f"Ошибка при массовом обновлении: {e}")
+            raise
+        else:
+            log.info(f"Обновлено {updated_count} записей")
+            await self._session.flush()
+            return updated_count
 
 
 class WoDAO(BaseDAO):
@@ -61,26 +71,10 @@ class WoDAO(BaseDAO):
         )
         return {row.WONumber: row.id for row in result_wos}
 
-
-    async def find_one_or_none_by_dict(self, filters: dict) -> dict:
-        """Получение одной записи по фильтру схемы pydentic."""
-        log.info(f"Поиск одной записи {self.model.__name__} по фильтрам: {filters}")
-        try:
-            query = select(self.model).filter_by(**filters)
-            result = await self._session.execute(query)
-            record = result.scalar_one_or_none()
-        except SQLAlchemyError as e:
-            log.error(f"Ошибка при поиске записи по фильтрам {filters}: {e}")
-            raise
-        else:
-            log_message = f"Запись {'найдена' if record else 'не найдена'} по фильтрам: {filters}"
-            log.info(log_message)
-            return record
-
-    async def get_wos_by_names(self, names: list[str]) -> list[dict]:
+    async def get_wos_by_names(self, wo_numbers: list[str]) -> list[dict]:
         """Получение существующих программ."""
         # TODO валидировать входящий список имён
-        query = select(Program).where(Program.ProgramName.in_(names))
+        query = select(self.model).where(self.model.WONumber.in_(wo_numbers))
 
         # Выполнение запроса
         result = await self._session.execute(query)
@@ -95,5 +89,15 @@ class PartDAO(BaseDAO):
 
     model = Part
 
+    async def get_parts_by_program_ids(self, ids: list[int]) -> list[dict]:
+        """Получение существующих программ."""
+        # TODO валидировать входящий список имён
+        query = select(self.model).where(self.model.program_id.in_(ids))
+        # query = select(Part).where(Part.program_id.in_(ids))
+        # Выполнение запроса
+        result = await self._session.execute(query)
+        # Получение всех записей
+        parts = result.scalars().all()
+        return [part.to_dict() for part in parts]
 
 
