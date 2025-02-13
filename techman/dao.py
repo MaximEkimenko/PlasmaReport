@@ -1,5 +1,5 @@
 """DAO сервиса techman."""
-from sqlalchemy import insert, select, update
+from sqlalchemy import delete, insert, select, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from db.base_dao import BaseDAO
@@ -20,8 +20,8 @@ class ProgramDAO(BaseDAO):
         )
         return {row.ProgramName: row.id for row in result_programs}
 
-    async def get_programs_by_names(self, names: list[str]) -> list[dict]:
-        """Получение существующих программ."""
+    async def find_programs_by_names(self, names: list[str]) -> list[dict]:
+        """Получение существующих программ по имени программы."""
         # TODO валидировать входящий список имён
         query = select(self.model).where(self.model.ProgramName.in_(names))
 
@@ -31,6 +31,22 @@ class ProgramDAO(BaseDAO):
         # Получение всех записей
         programs = result.scalars().all()
         return [program.to_dict() for program in programs]
+
+
+    async def find_programs_by_ids(self, ids: list[int]) -> list[dict]:
+        """Получение существующих программ по имени программы."""
+        # TODO валидировать входящий список имён
+        query = select(self.model).where(self.model.id.in_(ids))
+
+        # Выполнение запроса
+        result = await self._session.execute(query)
+
+        # Получение всех записей
+        programs = result.scalars().all()
+        return [program.to_dict() for program in programs]
+
+
+
 
     async def bulk_update_by_field_name(self, records: list[dict], update_field_name: str) -> int:
         """Групповое обновление записей по имени поля."""
@@ -71,8 +87,8 @@ class WoDAO(BaseDAO):
         )
         return {row.WONumber: row.id for row in result_wos}
 
-    async def get_wos_by_names(self, wo_numbers: list[str]) -> list[dict]:
-        """Получение существующих программ."""
+    async def find_wos_by_names(self, wo_numbers: list[str]) -> list[dict]:
+        """Получение существующих заказов по имени заказа."""
         # TODO валидировать входящий список имён
         query = select(self.model).where(self.model.WONumber.in_(wo_numbers))
 
@@ -99,5 +115,20 @@ class PartDAO(BaseDAO):
         # Получение всех записей
         parts = result.scalars().all()
         return [part.to_dict() for part in parts]
+
+    async def delete_by_id(self, element_id: int) -> int:
+        """Удаление записей по id."""
+        # TODO делать BULK_DELETE
+        log.info(f"Удаление записей {self.model.__name__} по id: {element_id}")
+        try:
+            query = delete(self.model).filter_by(id=element_id)
+            result = await self._session.execute(query)
+        except SQLAlchemyError as e:
+            log.error(f"Ошибка при удалении записей: {e}")
+            raise
+        else:
+            log.info(f"Удалено {result.rowcount} записей.")
+            await self._session.flush()
+            return int(result.rowcount)
 
 

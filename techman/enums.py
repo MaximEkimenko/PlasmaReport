@@ -7,7 +7,7 @@ class ProgramStatus(enum.StrEnum):
 
     NEW = "новая"
     CREATED = "создана"
-    UNASSIGNED = "не распределена"
+    UNASSIGNED = "не распределена"  # TODO not used ?
     ASSIGNED = "распределена"
     ACTIVE = "в работе"  # TODO Unused in MVP назначает оператор взятием в работу на своём устройстве
     DONE = "выполнена"

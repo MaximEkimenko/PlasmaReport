@@ -2,6 +2,7 @@
 import asyncio
 
 from typing import Any
+from decimal import Decimal
 from operator import itemgetter
 from collections import defaultdict
 
@@ -68,27 +69,17 @@ async def create_data_to_db(active_programs: list[str]) -> dict[str, list[dict[s
                       "DueDate",
                       "RevisionNumber",
                       "PK_PIP",
-                      # "RepeatIDPart",
                       "Thickness",
                       "PierceQtyPart",
                       "NestedArea",
                       )
 
-    programs = []
     wos = []
     parts = []
-
-    # Множества для уникальности
-    # seen_programs = set()
     seen_wos = set()
     seen_parts = set()
     max_programs = defaultdict(dict)
     for line_dict in data_programs_wos_parts_list:
-        # Programs
-        # program_frozenset = frozenset((key, line_dict[key]) for key in program_dict_keys)
-        # if program_frozenset not in seen_programs:
-        #     seen_programs.add(program_frozenset)
-        #     programs.append(dict(zip(program_dict_keys, itemgetter(*program_dict_keys)(line_dict), strict=False)))
         program_name = line_dict.get("ProgramName")
         repeat_id_program = line_dict.get("RepeatIDProgram")
         # определение записи с максимальным RepeatIDProgram
@@ -116,8 +107,14 @@ async def create_data_to_db(active_programs: list[str]) -> dict[str, list[dict[s
         dict(zip(program_dict_keys, itemgetter(*program_dict_keys)(line_dict), strict=False))
         for line_dict in max_programs.values()
     ]
+    # print(parts)
 
     return {"programs": programs, "wos": wos, "parts": parts}
+
+
+def normalize_value(value: str | float | Decimal) -> int:
+    """Функция для нормализации значений float и Decimal для корректного сравнения."""
+    return int(value) if isinstance(value, Decimal | float) else value
 
 
 if __name__ == "__main__":
@@ -125,5 +122,5 @@ if __name__ == "__main__":
     _active_programs = ["SP RIFL- 4-142696",
                         ]
     data = (asyncio.run(create_data_to_db(_active_programs)))
-    # pprint(data["programs"])
+    # pprint(data["parts"])
     # pprint(data["wos"])

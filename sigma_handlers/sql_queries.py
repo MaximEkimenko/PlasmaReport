@@ -13,7 +13,7 @@ sigma_users_table = "Users"  # таблица с пользователями si
 # которые есть в program_table и full_table
 programs_name_query = f"""
            SELECT 
-                p.ProgramName
+                p.ProgramName, p.PostDateTime, p.Material
             FROM 
                 dbo.{program_table} p
             WHERE 
@@ -25,7 +25,7 @@ programs_name_query = f"""
                     WHERE f.ProgramName = p.ProgramName
                 )
             GROUP BY 
-                p.ProgramName
+                p.ProgramName, p.PostDateTime, p.Material
             ORDER BY 
                 MAX(p.PostDateTime) DESC
                     """

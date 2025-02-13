@@ -91,4 +91,9 @@ class SWoData(BaseModel):
     WONumber: str = Field(description="Номер заказа", example="Z325")
 
 
+class SUpdateProgramData(BaseModel):
+    """Модель данных программ обновления."""
 
+    id: int
+    program_status: str
+    ProgramName: str
