@@ -1,4 +1,4 @@
-"""Содели сервиса techman."""
+"""Модели сервиса techman."""
 import datetime
 
 from decimal import Decimal
@@ -7,6 +7,9 @@ from sqlalchemy import TEXT, TIMESTAMP, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from db.database import Base, uniq_string
+
+# from master.models import FioDoer
+from master.enums import Jobs
 from techman.enums import WoStatus, PartStatus, ProgramStatus
 
 
@@ -39,6 +42,17 @@ class Program(Base):
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
     program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED, index=True)
 
+    fio_doer_id: Mapped[int] = mapped_column(ForeignKey("fiodoer.id"), nullable=True)
+    fio_doer: Mapped["FioDoer"] = relationship("FioDoer", back_populates="program", lazy="joined")
+
+
+class FioDoer(Base):
+    """Модель исполнителей."""
+
+    fio_doer: Mapped[uniq_string]
+    position: Mapped[Jobs] = mapped_column(default=Jobs.OPERATOR)
+    program: Mapped[list["Program"]] = relationship("Program", back_populates="fio_doer")
+
 
 class WO(Base):
     """Модель номеров заказов на плазменную резку."""
@@ -59,10 +73,10 @@ class Part(Base):
     """Модель деталей заказа на плазменную резку."""
 
     wo_number_id: Mapped[int] = mapped_column(ForeignKey("wo.id"))
-    wo_number: Mapped[WO] = relationship("WO", back_populates="parts", lazy="joined")
+    wo_number: Mapped[WO] = relationship("WO", back_populates="parts")
 
     program_id: Mapped[int] = mapped_column(ForeignKey("program.id"))
-    program: Mapped[Program] = relationship("Program", back_populates="parts", lazy="joined")
+    program: Mapped[Program] = relationship("Program", back_populates="parts")
 
     PartName: Mapped[str] = mapped_column(index=True)  # PartName
     # RepeatIDPart: Mapped[int] = mapped_column(nullable=True)  # RepeatID
@@ -83,10 +97,13 @@ class Part(Base):
     DueDate: Mapped[datetime] = mapped_column(TIMESTAMP)  # DueDate
     RevisionNumber: Mapped[str]  # RevisionNumber
     PK_PIP: Mapped[str]  # PK_PIP
-    part_status: Mapped[PartStatus] = mapped_column(default=PartStatus.UNASSIGNED, index=True)
     Thickness: Mapped[float]  # Thickness
+
+    part_status: Mapped[PartStatus] = mapped_column(default=PartStatus.UNASSIGNED, index=True)
+    qty_fact: Mapped[int] = mapped_column(nullable=True, default=0)
+
 
     # для каждой программы уникальная деталь
     __table_args__ = (
-        UniqueConstraint("PartName", "program_id",  name="uq_part_program"),
+        UniqueConstraint("PartName", "program_id", "wo_number_id",  name="uq_part_program_wo"),
     )

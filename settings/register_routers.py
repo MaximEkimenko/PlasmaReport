@@ -4,7 +4,9 @@ from fastapi import FastAPI, APIRouter
 from auth.router import router as auth_router
 from logist.router import router as logist_router
 from master.router import router as master_router
+from reports.router import router as reports_router
 from techman.router import router as techman_router
+from operator_worker.router import router as operator_router
 
 
 def register_routers(app: FastAPI) -> None:
@@ -25,3 +27,5 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth_router, prefix="/auth", tags=["auth"])
     app.include_router(techman_router, prefix="/techman", tags=["techman"])
     app.include_router(master_router, prefix="/master", tags=["master"])
+    app.include_router(operator_router, prefix="/operator", tags=["operator"])
+    app.include_router(reports_router, prefix="/reports", tags=["reports"])

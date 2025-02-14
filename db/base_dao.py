@@ -168,7 +168,7 @@ class BaseDAO(Generic[T]):
         try:
             updated_count = 0
             for record in records:
-                record_dict = record.model_dump(exclude_unset=True)
+                record_dict = record.model_dump()
                 if "id" not in record_dict:
                     continue
 

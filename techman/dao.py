@@ -1,9 +1,12 @@
 """DAO сервиса techman."""
+
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from db.base_dao import BaseDAO
 from logger_config import log
+from techman.enums import ProgramStatus
 from techman.models import WO, Part, Program
 
 
@@ -11,6 +14,21 @@ class ProgramDAO(BaseDAO):
     """Класс объекта доступа к БД для программы (СЗ)."""
 
     model = Program
+
+    async def find_programs_by_statuses(self, names: list[ProgramStatus]) -> list[dict]:
+        """Получение существующих программ по имени программы."""
+        # TODO валидировать входящий список имён
+        query = select(self.model).where(self.model.program_status.in_(names))
+
+        # Выполнение запроса
+        result = await self._session.execute(query)
+
+        # Получение всех записей
+        programs = result.scalars().all()
+        return [program.to_dict() for program in programs]
+
+
+
 
     async def insert_returning(self, values: list) -> dict:
         """Вставка данных с возвратом id новой записи и имени программы."""
@@ -32,7 +50,6 @@ class ProgramDAO(BaseDAO):
         programs = result.scalars().all()
         return [program.to_dict() for program in programs]
 
-
     async def find_programs_by_ids(self, ids: list[int]) -> list[dict]:
         """Получение существующих программ по имени программы."""
         # TODO валидировать входящий список имён
@@ -44,9 +61,6 @@ class ProgramDAO(BaseDAO):
         # Получение всех записей
         programs = result.scalars().all()
         return [program.to_dict() for program in programs]
-
-
-
 
     async def bulk_update_by_field_name(self, records: list[dict], update_field_name: str) -> int:
         """Групповое обновление записей по имени поля."""
@@ -105,11 +119,38 @@ class PartDAO(BaseDAO):
 
     model = Part
 
+    async def get_joined_part_data_by_programs_ids_list(self, ids: list[int]) -> list[dict]:
+        """Получение существующих программ."""
+        query = (
+            select(self.model)
+            .where(self.model.program_id.in_(ids))
+            .options(
+                joinedload(self.model.program),  # Предварительно загружаем данные программы
+                joinedload(self.model.wo_number),  # Предварительно загружаем данные заказа
+            )
+        )
+        # Выполнение запроса
+        result = await self._session.execute(query)
+
+        # Получение всех записей
+        parts = result.scalars().all()
+        output = []
+        for part in parts:
+            # Объединяем данные детали, программы и заказа в один словарь
+            combined_data = {
+                **part.to_dict(),  # Данные детали
+                **(part.program.to_dict() if part.program else {}),  # Данные программы
+                **(part.wo_number.to_dict() if part.wo_number else {}),  # Данные заказа
+                # **(getattr(part, "wo_number", {}).to_dict() if getattr(part, "wo_number", None) else {})
+            }
+            output.append(combined_data)
+
+        return output
+
     async def get_parts_by_program_ids(self, ids: list[int]) -> list[dict]:
         """Получение существующих программ."""
         # TODO валидировать входящий список имён
         query = select(self.model).where(self.model.program_id.in_(ids))
-        # query = select(Part).where(Part.program_id.in_(ids))
         # Выполнение запроса
         result = await self._session.execute(query)
         # Получение всех записей
@@ -130,5 +171,3 @@ class PartDAO(BaseDAO):
             log.info(f"Удалено {result.rowcount} записей.")
             await self._session.flush()
             return int(result.rowcount)
-
-

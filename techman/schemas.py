@@ -97,3 +97,10 @@ class SUpdateProgramData(BaseModel):
     id: int
     program_status: str
     ProgramName: str
+
+
+class SProgramToCreate(BaseModel):
+    """Схема для создания программы."""
+
+    program_status: str
+    ProgramName: str

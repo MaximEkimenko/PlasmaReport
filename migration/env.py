@@ -11,6 +11,7 @@ from auth.models import User
 from techman.models import Part, Program, WO
 from db.database import Base
 
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
