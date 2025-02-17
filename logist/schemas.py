@@ -12,3 +12,8 @@ class SProgramWithQty(BaseModel):
     part_status: PartStatus | None = None
 
 
+class SStorageCell(BaseModel):
+    """Схема ячейки склада."""
+
+    id: int | None = None
+    cell_name: str

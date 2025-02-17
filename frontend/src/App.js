@@ -1,136 +1,151 @@
-// src/App.js
-import React, { useState } from 'react'
-import DatePickerComponent from './components/DatePicker'
-import { getRawData, downloadExcel } from './services/Api'
-import './App.css'
+// App.js
+import React, { useEffect, useState } from 'react'
+import { DataGrid, GridToolbar } from '@mui/x-data-grid'
+import { Box, TextField, Button } from '@mui/material'
+import * as XLSX from 'xlsx' // Библиотека для работы с Excel
 
-const App = () => {
-    const [startDate, setStartDate] = useState(null)
-    const [endDate, setEndDate] = useState(null)
-    const [error, setError] = useState('')
+function App() {
     const [data, setData] = useState([])
-    const [loading, setLoading] = useState(false)
+    const [pageSize, setPageSize] = useState(50) // Размер страницы
+    const [searchTerm, setSearchTerm] = useState('') // Глобальный поиск
+    const [selectedRows, setSelectedRows] = useState([]) // Выбранные строки
 
-    // Проверка на корректность дат
-    const handleStartDateChange = (date) => {
-        setStartDate(date)
-        if (endDate && date > endDate) {
-            setError('Дата начала не может быть позже даты окончания')
-        } else {
-            setError('')
-        }
-    }
+    // Загрузка данных с сервера
+    useEffect(() => {
+        fetch('http://192.168.8.163:8000/master/get_programs_for_assignment') // Ваш API
+            .then((response) => response.json())
+            .then((json) => setData(json))
+            .catch((error) => console.error('Error fetching data:', error))
+    }, [])
 
-    const handleEndDateChange = (date) => {
-        setEndDate(date)
-        if (startDate && date < startDate) {
-            setError('Дата окончания не может быть раньше даты начала')
-        } else {
-            setError('')
-        }
-    }
+    // Функция для фильтрации данных
+    const filteredData = React.useMemo(() => {
+        if (!searchTerm) return data
 
-    const handleShowTable = async () => {
-        setLoading(true)
-        try {
-            const response = await getRawData(
-                startDate.toISOString().split('T')[0],
-                endDate.toISOString().split('T')[0]
+        return data.filter((row) =>
+            Object.values(row).some((value) =>
+                String(value).toLowerCase().includes(searchTerm.toLowerCase())
             )
-            setData(response.data)
-        } catch (err) {
-            console.error('Ошибка при получении данных:', err)
-        } finally {
-            setLoading(false)
-        }
+        )
+    }, [data, searchTerm])
+
+    // Определение колонок
+    const columns = React.useMemo(() => {
+        if (data.length === 0) return []
+
+        const firstRow = data[0]
+        const flatKeys = flattenObjectKeys(firstRow) // Рекурсивное получение всех ключей
+
+        return [
+            ...flatKeys.map((key) => ({
+                field: key, // Ключ для доступа к данным
+                headerName:
+                    key.split('.').pop().charAt(0).toUpperCase() + key.split('.').pop().slice(1), // Заголовок
+                width: 200,
+                editable: true, // Разрешаем редактирование
+            })),
+        ]
+    }, [data])
+
+    // Обновление данных при редактировании
+    const handleEditCellChange = (updatedRow) => {
+        setData((prevData) => prevData.map((row) => (row.id === updatedRow.id ? updatedRow : row)))
     }
 
-    const handleDownloadExcel = async () => {
-        try {
-            const response = await downloadExcel(
-                startDate.toISOString().split('T')[0],
-                endDate.toISOString().split('T')[0]
-            )
-            const file = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            })
-            const fileURL = URL.createObjectURL(file)
-            const link = document.createElement('a')
-            link.href = fileURL
-            link.download = `data_${startDate.toISOString().split('T')[0]}_${
-                endDate.toISOString().split('T')[0]
-            }.xlsx`
-            link.click()
-        } catch (err) {
-            console.error('Ошибка при загрузке файла:', err)
-        }
+    // Отправка выбранных id на сервер
+    const handleSendSelectedIds = () => {
+        const selectedIds = selectedRows.map((row) => row.id)
+        console.log('Sending selected IDs to server:', selectedIds)
+
+        // Здесь можно добавить запрос на сервер, например:
+        fetch('/api/send-ids', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedIds }),
+        })
+            .then((response) => response.json())
+            .then((result) => console.log('Server response:', result))
+            .catch((error) => console.error('Error sending IDs:', error))
     }
 
-    const isDateRangeValid = startDate && endDate && !error
-    const isLongRange = endDate && startDate && endDate - startDate > 30 * 24 * 60 * 60 * 1000 // больше месяца
+    // Выгрузка данных в Excel
+    const handleExportToExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(filteredData)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Users')
+        XLSX.writeFile(workbook, 'users.xlsx')
+    }
 
     return (
-        <div className='App'>
-            <h1>Выберите даты для формирования отчёта</h1>
-            <div className='input-container'>
-                <div className={`date-picker-container ${error ? 'error' : ''}`}>
-                    <label>Начало</label>
-                    <DatePickerComponent
-                        selectedDate={startDate}
-                        onChange={handleStartDateChange}
-                        maxDate={endDate}
-                    />
-                </div>
-                <div className={`date-picker-container ${error ? 'error' : ''}`}>
-                    <label>Окончание</label>
-                    <DatePickerComponent
-                        selectedDate={endDate}
-                        onChange={handleEndDateChange}
-                        minDate={startDate}
-                    />
-                </div>
+        <Box sx={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+            <h1>MUI X DataGrid Example</h1>
+
+            {/* Глобальный поиск */}
+            <TextField
+                label='Search'
+                variant='outlined'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                fullWidth
+                sx={{ marginBottom: '20px' }}
+            />
+
+            {/* Кнопки */}
+            <Box sx={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                <Button
+                    variant='contained'
+                    color='primary'
+                    onClick={handleSendSelectedIds}
+                    disabled={selectedRows.length === 0}
+                >
+                    Send Selected IDs ({selectedRows.length})
+                </Button>
+                <Button variant='contained' color='secondary' onClick={handleExportToExcel}>
+                    Export to Excel
+                </Button>
+            </Box>
+
+            {/* Таблица */}
+            <div style={{ height: 600, width: '100%' }}>
+                <DataGrid
+                    rows={filteredData}
+                    columns={columns}
+                    pageSize={pageSize}
+                    onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                    rowsPerPageOptions={[10, 50, 100]} // Варианты размера страницы
+                    pagination
+                    checkboxSelection // Включаем выбор строк
+                    // disableSelectionOnClick // Отключаем выбор строк по клику
+                    onSelectionModelChange={(newSelection) => {
+                        console.log('New Selection:', newSelection) // Для отладки
+                        const selectedIDs = new Set(newSelection)
+                        const selectedData = filteredData.filter((row) => selectedIDs.has(row.id))
+                        setSelectedRows(selectedData)
+                    }}
+                    experimentalFeatures={{
+                        columnReorder: true, // Включаем перемещение колонок
+                        newEditingApi: true, // Включаем новую систему редактирования
+                    }}
+                    onCellEditCommit={handleEditCellChange} // Обработка редактирования ячеек
+                    components={{
+                        Toolbar: GridToolbar, // Добавляем панель инструментов для экспорта и других функций
+                    }}
+                />
             </div>
-
-            {error && <p className='error-message'>{error}</p>}
-
-            {isDateRangeValid && (
-                <>
-                    <div className='buttons'>
-                        {!isLongRange && (
-                            <button onClick={handleShowTable}>Показать таблицу</button>
-                        )}
-                        <button onClick={handleDownloadExcel}>Загрузить Excel</button>
-                    </div>
-                </>
-            )}
-
-            {loading && <p>Загрузка...</p>}
-            {data.length > 0 && !loading && (
-                <table>
-                    <thead>
-                        <tr>
-                            {/* Генерация заголовков таблицы на основе ключей первого объекта */}
-                            {data.length > 0 &&
-                                Object.keys(data[0]).map((key, index) => (
-                                    <th key={index}>{key}</th>
-                                ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {/* Генерация строк таблицы */}
-                        {data.map((row, rowIndex) => (
-                            <tr key={rowIndex}>
-                                {/* Генерация ячеек строки на основе значений объекта */}
-                                {Object.values(row).map((value, cellIndex) => (
-                                    <td key={cellIndex}>{value}</td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-        </div>
+        </Box>
     )
+}
+
+// Рекурсивная функция для получения всех ключей (включая вложенные)
+function flattenObjectKeys(obj, parentKey = '', keys = []) {
+    for (const key in obj) {
+        if (typeof obj[key] === 'object' && obj[key] !== null) {
+            flattenObjectKeys(obj[key], `${parentKey}${key}.`, keys)
+        } else {
+            keys.push(`${parentKey}${key}`)
+        }
+    }
+    return keys
 }
 
 export default App

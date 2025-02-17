@@ -125,8 +125,9 @@ class PartDAO(BaseDAO):
             select(self.model)
             .where(self.model.program_id.in_(ids))
             .options(
-                joinedload(self.model.program),  # Предварительно загружаем данные программы
-                joinedload(self.model.wo_number),  # Предварительно загружаем данные заказа
+                joinedload(self.model.program),
+                joinedload(self.model.wo_number),
+                joinedload(self.model.storage_cell),
             )
         )
         # Выполнение запроса
@@ -141,6 +142,7 @@ class PartDAO(BaseDAO):
                 **part.to_dict(),  # Данные детали
                 **(part.program.to_dict() if part.program else {}),  # Данные программы
                 **(part.wo_number.to_dict() if part.wo_number else {}),  # Данные заказа
+                # **(part.storage_cell.to_dict() if part.wo_number else {}),
                 # **(getattr(part, "wo_number", {}).to_dict() if getattr(part, "wo_number", None) else {})
             }
             output.append(combined_data)

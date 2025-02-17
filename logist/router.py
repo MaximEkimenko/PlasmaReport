@@ -5,11 +5,12 @@ from fastapi import Depends, APIRouter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from exceptions import EmptyAnswerError, AlchemyDatabaseError
+from exceptions import EmptyAnswerError, AlchemyDatabaseError, ExistingDatabaseEntityError
+from logist.dao import StorageCellDAO
 from techman.dao import PartDAO, ProgramDAO
 from logger_config import log
 from techman.enums import PartStatus, ProgramStatus
-from logist.schemas import SProgramWithQty
+from logist.schemas import SStorageCell, SProgramWithQty
 from master.schemas import SProgramsStatus
 from dependencies.dao_dep import get_session_with_commit, get_session_without_commit
 
@@ -85,7 +86,8 @@ async def calculate_parts(parts_with_qty: list[SProgramWithQty],
         program_parts = await part_select_table.get_joined_part_data_by_programs_ids_list([program_id])
 
         parts_statuses = [part["part_status"] for part in program_parts]
-        if all(status == PartStatus.DONE_FULL or status == PartStatus.DONE_PARTIAL for status in parts_statuses): # noqa
+        if all(status == PartStatus.DONE_FULL or status == PartStatus.DONE_PARTIAL for status in  # noqa
+               parts_statuses):
             program_status = ProgramStatus.DONE
             program_update_table = ProgramDAO(session=add_session)
             await (program_update_table.bulk_update(
@@ -96,3 +98,24 @@ async def calculate_parts(parts_with_qty: list[SProgramWithQty],
         else:
             log.debug("Статус программы {program_id} не менялся. Не все детали выполнены.", program_id=program_id)
     return {"msg": msg}
+
+
+@router.post("/create_storage_cell", tags=["logist"])
+async def create_storage_cell(storage_cell: SStorageCell,
+                              add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
+                              select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+                              # user_data: Annotated[User, Depends(get_current_techman_user)]
+                              ) -> dict:
+    """Создание места хранения деталей.
+
+    Пример ввода:
+    `{"cell_name": "A1101"}`.
+    """
+    storage_select_table = StorageCellDAO(session=select_session)
+    existing_cell = await storage_select_table.find_one_or_none(storage_cell)
+    if existing_cell:
+        raise ExistingDatabaseEntityError(detail="Место хранения с таким именем уже существует.")
+    storage_cell_add_table = StorageCellDAO(session=add_session)
+    await storage_cell_add_table.add(storage_cell)
+
+    return {"msg": f"Место хранения {storage_cell.cell_name} успешно создано."}

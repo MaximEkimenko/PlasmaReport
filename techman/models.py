@@ -78,6 +78,9 @@ class Part(Base):
     program_id: Mapped[int] = mapped_column(ForeignKey("program.id"))
     program: Mapped[Program] = relationship("Program", back_populates="parts")
 
+    storage_cell_id: Mapped[int] = mapped_column(ForeignKey("storagecell.id"), nullable=True)
+    storage_cell: Mapped[Program] = relationship("StorageCell", back_populates="parts")
+
     PartName: Mapped[str] = mapped_column(index=True)  # PartName
     # RepeatIDPart: Mapped[int] = mapped_column(nullable=True)  # RepeatID
     QtyInProcess: Mapped[int]  # QtyInProcess
@@ -102,8 +105,15 @@ class Part(Base):
     part_status: Mapped[PartStatus] = mapped_column(default=PartStatus.UNASSIGNED, index=True)
     qty_fact: Mapped[int] = mapped_column(nullable=True, default=0)
 
-
     # для каждой программы уникальная деталь
     __table_args__ = (
         UniqueConstraint("PartName", "program_id", "wo_number_id",  name="uq_part_program_wo"),
     )
+
+
+class StorageCell(Base):
+    """Модель мест хранения деталей."""
+
+    cell_name: Mapped[uniq_string] = mapped_column(index=True)
+    parts: Mapped[list["Part"]] = relationship("Part", back_populates="storage_cell")
+
