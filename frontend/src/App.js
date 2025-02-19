@@ -1,27 +1,53 @@
 // App.js
 import React, { useEffect, useState } from 'react'
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
-import { Box, TextField, Button } from '@mui/material'
-import * as XLSX from 'xlsx' // Библиотека для работы с Excel
+import {
+    Box,
+    TextField,
+    Button,
+    Paper,
+    Typography,
+    Tooltip,
+    ThemeProvider,
+    createTheme,
+} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search' // Иконка поиска
+import SendIcon from '@mui/icons-material/Send' // Иконка отправки
+import FileDownloadIcon from '@mui/icons-material/FileDownload' // Иконка экспорта
+import * as XLSX from 'xlsx'
+
+// Создаем кастомную тему Material-UI
+const theme = createTheme({
+    palette: {
+        primary: {
+            main: '#1976d2', // Синий цвет
+        },
+        secondary: {
+            main: '#f50057', // Розовый цвет
+        },
+    },
+    typography: {
+        fontFamily: 'Arial, sans-serif',
+    },
+})
 
 function App() {
-    const [data, setData] = useState([])
-    const [pageSize, setPageSize] = useState(50) // Размер страницы
-    const [searchTerm, setSearchTerm] = useState('') // Глобальный поиск
+    const [data, setData] = useState([]) // Все данные таблицы
+    const [pageSize, setPageSize] = useState(50)
+    const [searchTerm, setSearchTerm] = useState('')
     const [selectedRows, setSelectedRows] = useState([]) // Выбранные строки
 
     // Загрузка данных с сервера
     useEffect(() => {
-        fetch('http://192.168.8.163:8000/master/get_programs_for_assignment') // Ваш API
+        fetch('http://192.168.8.163:8000/master/get_programs_for_assignment')
             .then((response) => response.json())
             .then((json) => setData(json))
             .catch((error) => console.error('Error fetching data:', error))
     }, [])
 
-    // Функция для фильтрации данных
+    // Фильтрация данных
     const filteredData = React.useMemo(() => {
         if (!searchTerm) return data
-
         return data.filter((row) =>
             Object.values(row).some((value) =>
                 String(value).toLowerCase().includes(searchTerm.toLowerCase())
@@ -32,36 +58,40 @@ function App() {
     // Определение колонок
     const columns = React.useMemo(() => {
         if (data.length === 0) return []
-
         const firstRow = data[0]
-        const flatKeys = flattenObjectKeys(firstRow) // Рекурсивное получение всех ключей
-
+        const flatKeys = flattenObjectKeys(firstRow)
         return [
             ...flatKeys.map((key) => ({
-                field: key, // Ключ для доступа к данным
+                field: key,
                 headerName:
-                    key.split('.').pop().charAt(0).toUpperCase() + key.split('.').pop().slice(1), // Заголовок
+                    key.split('.').pop().charAt(0).toUpperCase() + key.split('.').pop().slice(1),
                 width: 200,
-                editable: true, // Разрешаем редактирование
+                editable: true,
             })),
         ]
     }, [data])
 
-    // Обновление данных при редактировании
-    const handleEditCellChange = (updatedRow) => {
-        setData((prevData) => prevData.map((row) => (row.id === updatedRow.id ? updatedRow : row)))
+    // Обработка обновления строки
+    const handleProcessRowUpdate = (newRow, oldRow) => {
+        const updatedData = data.map((row) => (row.id === newRow.id ? newRow : row))
+        setData(updatedData) // Обновляем состояние с новыми данными
+        return newRow // Возвращаем обновленную строку
     }
 
-    // Отправка выбранных id на сервер
+    // Отправка выбранных ID и обновленных данных на сервер
     const handleSendSelectedIds = () => {
-        const selectedIds = selectedRows.map((row) => row.id)
-        console.log('Sending selected IDs to server:', selectedIds)
+        const selectedIds = selectedRows
 
-        // Здесь можно добавить запрос на сервер, например:
+        // Находим обновленные данные для выбранных строк
+        const updatedData = data.filter((row) => selectedIds.includes(row.id))
+
+        console.log('Sending updated data to server:', updatedData)
+
+        // Отправляем данные на сервер
         fetch('/api/send-ids', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: selectedIds }),
+            body: JSON.stringify({ ids: selectedIds, updatedData }),
         })
             .then((response) => response.json())
             .then((result) => console.log('Server response:', result))
@@ -77,66 +107,101 @@ function App() {
     }
 
     return (
-        <Box sx={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-            <h1>MUI X DataGrid Example</h1>
-
-            {/* Глобальный поиск */}
-            <TextField
-                label='Search'
-                variant='outlined'
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                fullWidth
-                sx={{ marginBottom: '20px' }}
-            />
-
-            {/* Кнопки */}
-            <Box sx={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                <Button
-                    variant='contained'
-                    color='primary'
-                    onClick={handleSendSelectedIds}
-                    disabled={selectedRows.length === 0}
+        <ThemeProvider theme={theme}>
+            <Box sx={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+                {/* Заголовок */}
+                <Typography
+                    variant='h4'
+                    gutterBottom
+                    sx={{ color: 'primary.main', fontWeight: 'bold' }}
                 >
-                    Send Selected IDs ({selectedRows.length})
-                </Button>
-                <Button variant='contained' color='secondary' onClick={handleExportToExcel}>
-                    Export to Excel
-                </Button>
-            </Box>
+                    MUI X DataGrid Example
+                </Typography>
 
-            {/* Таблица */}
-            <div style={{ height: 600, width: '100%' }}>
-                <DataGrid
-                    rows={filteredData}
-                    columns={columns}
-                    pageSize={pageSize}
-                    onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                    rowsPerPageOptions={[10, 50, 100]} // Варианты размера страницы
-                    pagination
-                    checkboxSelection // Включаем выбор строк
-                    // disableSelectionOnClick // Отключаем выбор строк по клику
-                    onSelectionModelChange={(newSelection) => {
-                        console.log('New Selection:', newSelection) // Для отладки
-                        const selectedIDs = new Set(newSelection)
-                        const selectedData = filteredData.filter((row) => selectedIDs.has(row.id))
-                        setSelectedRows(selectedData)
-                    }}
-                    experimentalFeatures={{
-                        columnReorder: true, // Включаем перемещение колонок
-                        newEditingApi: true, // Включаем новую систему редактирования
-                    }}
-                    onCellEditCommit={handleEditCellChange} // Обработка редактирования ячеек
-                    components={{
-                        Toolbar: GridToolbar, // Добавляем панель инструментов для экспорта и других функций
-                    }}
-                />
-            </div>
-        </Box>
+                {/* Блок поиска и кнопок */}
+                <Paper elevation={3} sx={{ padding: '20px', marginBottom: '20px' }}>
+                    <Typography variant='h6' gutterBottom>
+                        Управление данными
+                    </Typography>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            gap: '10px',
+                            alignItems: 'center',
+                            marginBottom: '10px',
+                        }}
+                    >
+                        {/* Поле поиска */}
+                        <TextField
+                            label='Поиск'
+                            variant='outlined'
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            fullWidth
+                            InputProps={{
+                                startAdornment: <SearchIcon sx={{ marginRight: '8px' }} />,
+                            }}
+                        />
+                        {/* Кнопки */}
+                        <Tooltip title='Отправить выбранные ID'>
+                            <Button
+                                variant='contained'
+                                color='primary'
+                                onClick={handleSendSelectedIds}
+                                disabled={selectedRows.length === 0}
+                                startIcon={<SendIcon />}
+                            >
+                                Отправить ({selectedRows.length})
+                            </Button>
+                        </Tooltip>
+                        <Tooltip title='Экспорт в Excel'>
+                            <Button
+                                variant='contained'
+                                color='secondary'
+                                onClick={handleExportToExcel}
+                                startIcon={<FileDownloadIcon />}
+                            >
+                                Экспорт
+                            </Button>
+                        </Tooltip>
+                    </Box>
+                </Paper>
+
+                {/* Таблица */}
+                <Paper elevation={3} sx={{ height: 600, width: '100%', padding: '20px' }}>
+                    <DataGrid
+                        rows={filteredData}
+                        columns={columns}
+                        pageSize={pageSize}
+                        onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                        rowsPerPageOptions={[10, 50, 100]}
+                        pagination
+                        checkboxSelection
+                        disableSelectionOnClick
+                        onRowSelectionModelChange={(newSelection) => {
+                            setSelectedRows(newSelection) // Обновляем выбранные строки
+                        }}
+                        experimentalFeatures={{
+                            columnReorder: true,
+                            newEditingApi: true,
+                        }}
+                        processRowUpdate={handleProcessRowUpdate} // Обработка обновления строки
+                        components={{
+                            Toolbar: GridToolbar,
+                        }}
+                        sx={{
+                            '& .MuiDataGrid-cell:hover': {
+                                backgroundColor: 'rgba(0, 255, 0, 0.2)', // Эффект наведения
+                            },
+                        }}
+                    />
+                </Paper>
+            </Box>
+        </ThemeProvider>
     )
 }
 
-// Рекурсивная функция для получения всех ключей (включая вложенные)
+// Рекурсивная функция для получения всех ключей
 function flattenObjectKeys(obj, parentKey = '', keys = []) {
     for (const key in obj) {
         if (typeof obj[key] === 'object' && obj[key] !== null) {

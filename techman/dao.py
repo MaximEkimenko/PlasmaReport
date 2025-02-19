@@ -27,9 +27,6 @@ class ProgramDAO(BaseDAO):
         programs = result.scalars().all()
         return [program.to_dict() for program in programs]
 
-
-
-
     async def insert_returning(self, values: list) -> dict:
         """Вставка данных с возвратом id новой записи и имени программы."""
         result_programs = await self._session.execute(
@@ -139,9 +136,9 @@ class PartDAO(BaseDAO):
         for part in parts:
             # Объединяем данные детали, программы и заказа в один словарь
             combined_data = {
-                **part.to_dict(),  # Данные детали
                 **(part.program.to_dict() if part.program else {}),  # Данные программы
                 **(part.wo_number.to_dict() if part.wo_number else {}),  # Данные заказа
+                **part.to_dict(),  # Данные детали
                 # **(part.storage_cell.to_dict() if part.wo_number else {}),
                 # **(getattr(part, "wo_number", {}).to_dict() if getattr(part, "wo_number", None) else {})
             }
