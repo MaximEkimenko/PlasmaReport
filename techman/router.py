@@ -229,7 +229,7 @@ async def create_data(active_programs: list[dict],
     return success_msg
 
 
-@router.post("/update_data", tags=["techman"])
+@router.put("/update_data", tags=["techman"])
 async def update_data(
         active_programs: list[SUpdateProgramData],
         update_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
@@ -283,7 +283,6 @@ async def update_data(
     existing_parts = await part_table_select.get_parts_by_program_ids(program_ids)
 
     # список полей, для учёта в сравнении
-
 
     # словарь сопоставления ProgramName и program_id
     id_program_name_dict = {

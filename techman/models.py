@@ -1,9 +1,10 @@
 """Модели сервиса techman."""
+# TODO разнести модели по своим приложениям
 import datetime
 
 from decimal import Decimal
 
-from sqlalchemy import TEXT, TIMESTAMP, ForeignKey, UniqueConstraint
+from sqlalchemy import TEXT, TIMESTAMP, ForeignKey, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from db.database import Base, uniq_string
@@ -52,6 +53,7 @@ class FioDoer(Base):
     fio_doer: Mapped[uniq_string]
     position: Mapped[Jobs] = mapped_column(default=Jobs.OPERATOR)
     program: Mapped[list["Program"]] = relationship("Program", back_populates="fio_doer")
+    is_active: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
 
 class WO(Base):

@@ -15,6 +15,8 @@ from admin_panel.admin import create_admin_panel
 from settings.register_routers import register_routers
 
 # TODO
+#  переписать to_dict получение данных на to_dict схем pydantic, использовать to_dict в Base только для моделей
+#  без join
 #  аутентификация авторизация средствами FastAPI
 #  словарь перевода полей для отчёта и выгрузок
 #  cmd (bash) script по развёртке на приложения на клиенте

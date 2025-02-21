@@ -10,7 +10,7 @@ from techman.enums import ProgramStatus
 from techman.models import WO, Part, Program
 
 
-class ProgramDAO(BaseDAO):
+class ProgramDAO(BaseDAO[Program]):
     """Класс объекта доступа к БД для программы (СЗ)."""
 
     model = Program
@@ -85,7 +85,7 @@ class ProgramDAO(BaseDAO):
             return updated_count
 
 
-class WoDAO(BaseDAO):
+class WoDAO(BaseDAO[WO]):
     """Класс объекта доступа к БД для заказа (СЗ)."""
 
     model = WO
@@ -111,7 +111,7 @@ class WoDAO(BaseDAO):
         return [program.to_dict() for program in programs]
 
 
-class PartDAO(BaseDAO):
+class PartDAO(BaseDAO[Part]):
     """Класс объекта доступа к БД для детали (СЗ)."""
 
     model = Part
