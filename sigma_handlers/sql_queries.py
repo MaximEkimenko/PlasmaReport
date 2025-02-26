@@ -13,9 +13,13 @@ sigma_users_table = "Users"  # таблица с пользователями si
 # которые есть в program_table и full_table
 programs_name_query = f"""
            SELECT 
-                p.ProgramName, p.PostDateTime, p.Material
+                p.ProgramName, p.PostDateTime, p.Material,  us.UserName
             FROM 
                 dbo.{program_table} p
+            INNER JOIN 
+            dbo.{sigma_users_table} us
+        ON 
+            p.PostedByUserID = us.userid
             WHERE 
                 p.PostDateTime > ? -- start_date
                 AND p.PostDateTime < ? -- end_date
@@ -25,7 +29,7 @@ programs_name_query = f"""
                     WHERE f.ProgramName = p.ProgramName
                 )
             GROUP BY 
-                p.ProgramName, p.PostDateTime, p.Material
+                p.ProgramName, p.PostDateTime, p.Material, us.UserName
             ORDER BY 
                 MAX(p.PostDateTime) DESC
                     """

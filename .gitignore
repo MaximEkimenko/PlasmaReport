@@ -7,3 +7,5 @@ __pycache__
 tst_in_plasma_report.py
 /temp
 statistics.txt
+plasma_report.db
+logs

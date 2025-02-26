@@ -11,7 +11,7 @@ from db.database import Base, uniq_string
 
 # from master.models import FioDoer
 from master.enums import Jobs
-from techman.enums import WoStatus, PartStatus, ProgramStatus
+from techman.enums import WoStatus, PartStatus, ProgramStatus, ProgramPriority
 
 
 class Program(Base):
@@ -42,6 +42,9 @@ class Program(Base):
 
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
     program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED, index=True)
+    program_priority: Mapped[ProgramPriority] = mapped_column(default=ProgramPriority.LOW,
+                                                              server_default=text("4"), index=True)
+
 
     fio_doer_id: Mapped[int] = mapped_column(ForeignKey("fiodoer.id"), nullable=True)
     fio_doer: Mapped["FioDoer"] = relationship("FioDoer", back_populates="program", lazy="joined")

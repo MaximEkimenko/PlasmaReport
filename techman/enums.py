@@ -31,3 +31,11 @@ class PartStatus(enum.StrEnum):
     DONE_PARTIAL = "выполнена частично"
     # присваивается если фактическое количество детали совпадает с PIP
     DONE_FULL = "выполнена полностью"
+
+class ProgramPriority(enum.IntEnum):
+    """Приоритеты программы(сменного задания)."""
+
+    LOW = 4
+    MEDIUM = 3
+    HIGH = 2
+    CRITICAL = 1
