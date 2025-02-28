@@ -7,19 +7,11 @@ class ProgramStatus(enum.StrEnum):
 
     NEW = "новая"
     CREATED = "создана"
-    UNASSIGNED = "не распределена"  # TODO not used ?
+    UNASSIGNED = "не распределена"
     ASSIGNED = "распределена"
     ACTIVE = "в работе"  # TODO Unused in MVP назначает оператор взятием в работу на своём устройстве
+    CALCULATING = "количество принимается"
     DONE = "выполнена"
-    ARCHIVED = "заархивирована"
-
-
-class WoStatus(enum.StrEnum):
-    """Статусы заказа."""
-
-    CREATED = "создан"
-    ACTIVE = "в работе"
-    FINISHED = "завершен"
 
 
 class PartStatus(enum.StrEnum):
@@ -31,6 +23,18 @@ class PartStatus(enum.StrEnum):
     DONE_PARTIAL = "выполнена частично"
     # присваивается если фактическое количество детали совпадает с PIP
     DONE_FULL = "выполнена полностью"
+    # ACCEPTED = "принята"
+
+
+class WoStatus(enum.StrEnum):
+    """Статусы заказа."""
+
+    CREATED = "создан"
+    ACTIVE = "в работе"
+    FINISHED = "завершен"
+
+
+
 
 class ProgramPriority(enum.IntEnum):
     """Приоритеты программы(сменного задания)."""

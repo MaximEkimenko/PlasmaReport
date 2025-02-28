@@ -72,6 +72,7 @@ async def create_data_to_db(active_programs: list[str]) -> dict[str, list[dict[s
                       "Thickness",
                       "PierceQtyPart",
                       "NestedArea",
+                      "SourceFileName",
                       )
 
     wos = []
@@ -107,8 +108,6 @@ async def create_data_to_db(active_programs: list[str]) -> dict[str, list[dict[s
         dict(zip(program_dict_keys, itemgetter(*program_dict_keys)(line_dict), strict=False))
         for line_dict in max_programs.values()
     ]
-    # print(parts)
-
     return {"programs": programs, "wos": wos, "parts": parts}
 
 

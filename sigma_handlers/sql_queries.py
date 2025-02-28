@@ -7,7 +7,7 @@ work_orders_table = "WO"  # таблица с номерами текущих р
 program_table = "Program"  # таблица с названиями программ
 full_table = "PIP"  # таблица со всеми данными касательно программ
 sigma_users_table = "Users"  # таблица с пользователями sigma
-
+parts_library_table = "PartsLibrary"  # таблица с библиотекой частей
 
 # запрос на получение имён программ(сз) созданных во временном интервале выбираются только программы,
 # которые есть в program_table и full_table
@@ -111,8 +111,7 @@ def create_placeholders_params_query(placeholders):
             pr.ProgramName,
             
             pr.RepeatID as RepeatIDProgram,
-            -- p.RepeatID as RepeatIDPart,
-            
+              
             pr.UsedArea,
             
             pr.ScrapFraction,
@@ -165,8 +164,9 @@ def create_placeholders_params_query(placeholders):
             p.WOState,
             p.DueDate,
             p.RevisionNumber,
-            p.PK_PIP       
+            p.PK_PIP,
             
+            pl.SourceFileName       
         FROM 
             dbo.{full_table} p
         INNER JOIN 
@@ -181,6 +181,13 @@ def create_placeholders_params_query(placeholders):
             dbo.{sigma_users_table} us
         ON 
             pr.PostedByUserID = us.userid
+            
+        INNER JOIN 
+          dbo.{parts_library_table} pl
+        ON 
+           pl.PartName = p.PartName
+            
         WHERE  
             p.ProgramName IN ({placeholders});
         """
+# p.PartName,

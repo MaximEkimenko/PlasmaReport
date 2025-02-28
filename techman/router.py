@@ -75,7 +75,6 @@ async def get_program_parts(program_name: str,
     return await get_parts_by_program(program_name)
 
 
-# response_class = ...
 @router.get("/get_programs", tags=["techman"])
 async def get_programs(
         start_date: Annotated[date, Query(..., description="Начальная дата создания",
@@ -122,7 +121,6 @@ async def get_programs(
         if program_name["program_status"] in allowed_status
     ]
     return new_programs + existing_programs
-
 
 @router.post("/create_data", tags=["techman"])
 async def create_data(active_programs: list[dict],

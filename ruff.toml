@@ -67,7 +67,8 @@ ignore = [
    "BLE001",  # запрет обработки исключения Exception
    "RET503",  # явный вызов return
    # TODO FastAPI seprcials
-   "N805"     # First argument of a method should be named `self`
+   "N805",     # First argument of a method should be named `self`
+   "TRY301"
 ]
 
 [lint.flake8-quotes]

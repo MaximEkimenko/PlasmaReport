@@ -19,10 +19,10 @@ class SFioDoer(BaseModel):
     position: Jobs | None = Jobs.OPERATOR
 
 
-class SProgramIDWithFio(BaseModel):
+class SProgramIDWithFios(BaseModel):
     """Схема id программ с fio исполнителя."""
 
     id: int
-    fio_doer_id: int
+    fio_doer_id: list
     program_status: str = ProgramStatus.ASSIGNED.name
 

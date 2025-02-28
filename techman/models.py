@@ -14,6 +14,17 @@ from master.enums import Jobs
 from techman.enums import WoStatus, PartStatus, ProgramStatus, ProgramPriority
 
 
+class ProgramFioDoerAssociation(Base):
+    """Модель связи программы и исполнителя."""
+
+    program_id: Mapped[int] = mapped_column(ForeignKey("program.id",
+                                                       name="fk_association_program_id"), nullable=False)
+    fio_doer_id: Mapped[int] = mapped_column(ForeignKey("fiodoer.id",
+                                                        name="fk_association_fio_doer_id"), nullable=False)
+    __table_args__ = (
+        UniqueConstraint("program_id", "fio_doer_id", name="uix_program_fio_doer"),  # Уникальность сочетания
+    )
+
 class Program(Base):
     """Модель программ плазменной резки."""
 
@@ -40,14 +51,25 @@ class Program(Base):
     UserEMail: Mapped[str] = mapped_column(default="", nullable=True)  # UserEmail
     LastLoginDate: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)  # LastLoginDate
 
+    # путь к файлу раскладку ods
+    path_to_ods: Mapped[str] = mapped_column(default="", nullable=True)
+    # мастер
+    master_fio_id: Mapped[int] = mapped_column(ForeignKey("fiodoer.id",
+                                                          name="fk_program_master_fio_id"), nullable=True)
+    # время начала работы программы
+    time_program_started: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)
+    # время окончания работы программы
+    time_program_finished: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)
+
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
     program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED, index=True)
     program_priority: Mapped[ProgramPriority] = mapped_column(default=ProgramPriority.LOW,
-                                                              server_default=text("4"), index=True)
+                                                              server_default=text("LOW"), index=True)
+    # many_to_many к fio_doer_id
+    fio_doers: Mapped[list["FioDoer"]] = relationship(
+        "FioDoer", secondary="programfiodoerassociation", back_populates="programs",
+    )
 
-
-    fio_doer_id: Mapped[int] = mapped_column(ForeignKey("fiodoer.id"), nullable=True)
-    fio_doer: Mapped["FioDoer"] = relationship("FioDoer", back_populates="program", lazy="joined")
 
 
 class FioDoer(Base):
@@ -55,8 +77,13 @@ class FioDoer(Base):
 
     fio_doer: Mapped[uniq_string]
     position: Mapped[Jobs] = mapped_column(default=Jobs.OPERATOR)
-    program: Mapped[list["Program"]] = relationship("Program", back_populates="fio_doer")
     is_active: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+
+    programs: Mapped[list["Program"]] = relationship(
+        "Program", secondary="programfiodoerassociation", back_populates="fio_doers",
+    )
+
+    parts: Mapped[list["Part"]] = relationship("Part", back_populates="done_by_fio_doer")
 
 
 class WO(Base):
@@ -77,14 +104,20 @@ class WO(Base):
 class Part(Base):
     """Модель деталей заказа на плазменную резку."""
 
-    wo_number_id: Mapped[int] = mapped_column(ForeignKey("wo.id"))
+    wo_number_id: Mapped[int] = mapped_column(ForeignKey("wo.id", name="fk_part_wo_number_id"))
     wo_number: Mapped[WO] = relationship("WO", back_populates="parts")
 
-    program_id: Mapped[int] = mapped_column(ForeignKey("program.id"))
+    program_id: Mapped[int] = mapped_column(ForeignKey("program.id", name="fk_part_program_id"))
     program: Mapped[Program] = relationship("Program", back_populates="parts")
 
-    storage_cell_id: Mapped[int] = mapped_column(ForeignKey("storagecell.id"), nullable=True)
+    storage_cell_id: Mapped[int] = mapped_column(ForeignKey("storagecell.id",
+                                                            name="fk_part_storage_cell_id"), nullable=True)
     storage_cell: Mapped[Program] = relationship("StorageCell", back_populates="parts")
+
+    # сделано исполнителем
+    done_by_fio_doer_id: Mapped[int] = mapped_column(ForeignKey("fiodoer.id",
+                                                                name="fk_part_done_by_fio_doer_id"), nullable=True)
+    done_by_fio_doer: Mapped["FioDoer"] = relationship("FioDoer", back_populates="parts")
 
     PartName: Mapped[str] = mapped_column(index=True)  # PartName
     # RepeatIDPart: Mapped[int] = mapped_column(nullable=True)  # RepeatID
@@ -108,11 +141,14 @@ class Part(Base):
     Thickness: Mapped[float]  # Thickness
 
     part_status: Mapped[PartStatus] = mapped_column(default=PartStatus.UNASSIGNED, index=True)
+    # фактически изготовленное количество деталей
     qty_fact: Mapped[int] = mapped_column(nullable=True, default=0)
+    # путь к dxf файлу детали из SigmaNest
+    SourceFileName: Mapped[str] = mapped_column(TEXT, default="", nullable=True)
 
     # для каждой программы уникальная деталь
     __table_args__ = (
-        UniqueConstraint("PartName", "program_id", "wo_number_id",  name="uq_part_program_wo"),
+        UniqueConstraint("PartName", "program_id", "wo_number_id", name="uq_part_program_wo"),
     )
 
 
@@ -121,4 +157,3 @@ class StorageCell(Base):
 
     cell_name: Mapped[uniq_string] = mapped_column(index=True)
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="storage_cell")
-

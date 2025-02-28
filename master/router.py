@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Depends, APIRouter
+from fastapi import Query, Depends, APIRouter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +12,7 @@ from techman.dao import PartDAO, ProgramDAO
 from master.enums import Jobs
 from logger_config import log
 from techman.enums import ProgramStatus
-from master.schemas import SFioDoer, SProgramsStatus, SProgramIDWithFio
+from master.schemas import SFioDoer, SProgramsStatus
 from dependencies.dao_dep import get_session_with_commit, get_session_without_commit
 
 router = APIRouter()
@@ -51,6 +51,31 @@ async def get_parts_by_program_id(program_id: int,
     return parts
 
 
+@router.get("/get_parts_by_statuses", tags=["master", "logist"])
+async def get_parts_by_statuses(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+                                include_program_statuses: Annotated[tuple[str, ...],
+                                Query()] = (ProgramStatus.CREATED,
+                                            ProgramStatus.UNASSIGNED,
+                                            ProgramStatus.ASSIGNED,
+                                            ProgramStatus.ACTIVE,
+                                            ),
+                                # user_data: Annotated[User, Depends(get_current_techman_user)]
+                                ) -> list[dict]:
+    """Получение программ по списку статусов.
+
+    include_program_statuses = список статусов программы, которые должны быть включены в выборку.
+    По молчанию =("создана",
+                "не распределена",
+               "распределена",
+               "в работе").
+    """
+    parts_select_table = PartDAO(session=select_session)
+    parts = await parts_select_table.get_joined_part_data_statuses(include_statuses=include_program_statuses)
+    if not parts:
+        raise EmptyAnswerError(detail="Нет деталей в данной выборке.")
+    return parts
+
+
 @router.post("/create_doer", tags=["master"])
 async def create_doer(fio_doer: SFioDoer,
                       add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
@@ -80,7 +105,7 @@ async def get_doers_list(select_session: Annotated[AsyncSession, Depends(get_ses
                          ) -> list[dict]:
     """Получение списка всех исполнителей."""
     fio_select_table = FioDoerDAO(session=select_session)
-    doers = await fio_select_table.find_all(filters=SFioDoer(position=Jobs.OPERATOR.value))
+    doers = await fio_select_table.find_all(filters=SFioDoer(position=Jobs.OPERATOR))
     if not doers:
         raise EmptyAnswerError(detail="Список операторов пуст.")
     return [fio_doer.to_dict() for fio_doer in doers]
@@ -90,7 +115,7 @@ async def get_doers_list(select_session: Annotated[AsyncSession, Depends(get_ses
 async def get_programs_for_assignment_and_doers(
         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
         # user_data: Annotated[User, Depends(get_current_techman_user)]
-        ) -> dict:
+) -> dict:
     """Получение словаря со списками программ и исполнителей.
 
     Пример ответа:
@@ -106,7 +131,7 @@ async def get_programs_for_assignment_and_doers(
         raise EmptyAnswerError(detail="Нет программ для передачи в работу.")
 
     fio_select_table = FioDoerDAO(session=select_session)
-    doers = await fio_select_table.find_all(filters=SFioDoer(position=Jobs.OPERATOR.value))
+    doers = await fio_select_table.find_all(filters=SFioDoer(position=Jobs.OPERATOR))
     if not doers:
         raise EmptyAnswerError(detail="Список операторов пуст.")
     doers = [fio_doer.to_dict() for fio_doer in doers]
@@ -115,7 +140,8 @@ async def get_programs_for_assignment_and_doers(
 
 
 @router.post("/assign_program", tags=["master"])
-async def assign_program(program_ids_with_fios_id: list[SProgramIDWithFio],
+async def assign_program(program_ids_with_fios_id: list[dict],
+                         # program_ids_with_fios_id: list[SProgramIDWithFios],
                          add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
                          select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
                          # user_data: Annotated[User, Depends(get_current_techman_user)]
@@ -125,10 +151,13 @@ async def assign_program(program_ids_with_fios_id: list[SProgramIDWithFio],
     Перевод программы в статус ASSIGNED.
 
     Пример ввода:
-    `[{"id":13, "fio_doer_id":2}, {"id":14, "fio_doer_id":3}]`
+    `[
+        {"id":13, "fio_doers_ids": [1, 2, 3]},
+        {"id":14, "fio_doers_ids": [4, 5, 6]}
+    ]`
     """
     program_select_table = ProgramDAO(session=select_session)
-    for program_id in [program_id_with_fio.id for program_id_with_fio in program_ids_with_fios_id]:
+    for program_id in [program_id_with_fio["id"] for program_id_with_fio in program_ids_with_fios_id]:
         exist_programs = await program_select_table.find_one_or_none_by_id(program_id)
         if not exist_programs:
             log.warning("Попытка обновления не существующей программы с id={program_id}.", program_id=program_id)
@@ -136,7 +165,8 @@ async def assign_program(program_ids_with_fios_id: list[SProgramIDWithFio],
 
     try:
         program_update_table = ProgramDAO(session=add_session)
-        await program_update_table.bulk_update(records=program_ids_with_fios_id)
+        # await program_update_table.bulk_update(records=program_ids_with_fios_id)
+        await program_update_table.update_doer_fios(program_ids_with_fios_id)
     except SQLAlchemyError as e:
         await add_session.rollback()
         log.error("Ошибка при работе с БД.")

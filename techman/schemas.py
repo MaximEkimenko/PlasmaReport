@@ -30,6 +30,7 @@ class CommonPartData(BaseModel):
     TrueWeight: float = Field(description="Вес True поверхности", example=10.2)
     Thickness: float = Field(description="Толщина", example=10.2)
     NestedArea: float = Field(description="Площадь Nested поверхности", example=10.2)
+    SourceFileName: str = Field(description="Не определено", example="Part1.dxf")
 
 
 class SPartDataSigma(CommonPartData):
