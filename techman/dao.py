@@ -2,11 +2,13 @@
 
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
+from exceptions import WrongInputError
 from db.base_dao import BaseDAO
 from logger_config import log
 from techman.enums import ProgramStatus
+from master.schemas import SProgramIDWithFios
 from techman.models import WO, Part, FioDoer, Program, ProgramFioDoerAssociation
 
 
@@ -38,18 +40,19 @@ class ProgramDAO(BaseDAO[Program]):
     async def find_programs_by_names(self, names: list[str]) -> list[dict]:
         """Получение существующих программ по имени программы."""
         # TODO валидировать входящий список имён
-        query = select(self.model).where(self.model.ProgramName.in_(names))
+        query = select(self.model).options(selectinload(Program.fio_doers)).where(self.model.ProgramName.in_(names))
 
         # Выполнение запроса
         result = await self._session.execute(query)
 
         # Получение всех записей
         programs = result.scalars().all()
-        return [program.to_dict() for program in programs]
+
+        return [program.to_dict() | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
+                for program in programs]
 
     async def find_programs_by_ids(self, ids: list[int]) -> list[dict]:
-        """Получение существующих программ по имени программы."""
-        # TODO валидировать входящий список имён
+        """Получение существующих программ по id."""
         query = select(self.model).where(self.model.id.in_(ids))
 
         # Выполнение запроса
@@ -67,8 +70,7 @@ class ProgramDAO(BaseDAO[Program]):
             for record_dict in records:
                 if update_field_name not in record_dict:
                     continue
-
-                update_data = {field_name: field_value for field_name, field_value in record_dict.items()}  # noqa
+                update_data = dict(record_dict)
                 stmt = (
                     update(self.model)
                     .filter_by(**{update_field_name: record_dict[update_field_name]})
@@ -84,87 +86,114 @@ class ProgramDAO(BaseDAO[Program]):
             await self._session.flush()
             return updated_count
 
-
-    async def update_doer_fios(self, id_fio_doers: list[dict]) -> int:
-        """Обновление сполнителей сотрудников программы."""
+    async def update_fio_doers(self, id_fio_doers: list[SProgramIDWithFios]) -> None:
+        """Обновление исполнителей сотрудников программы."""
         try:
-            # async with session.begin():
-            # Step 1: Получаем все существующие Program IDs
-            program_ids = [item["id"] for item in id_fio_doers]
-            # programs_query = select(Program.id).where(Program.id.in_(program_ids))
-            # result = await self._session.execute(programs_query)
-            # existing_program_ids = {row.id for row in result}
-            #
-            # if not existing_program_ids:
-            #     msg = "No valid Program IDs provided."
-            #     raise ValueError(msg)
 
-            # Проверяем, что все указанные Program IDs существуют
-            # invalid_program_ids = set(program_ids) - existing_program_ids
-            # if invalid_program_ids:
-            #     msg = f"Programs with IDs {invalid_program_ids} do not exist."
-            #     raise ValueError(msg)
-
-            # Step 2: Получаем все FioDoer IDs
-            fio_doers_ids = {fio_id for item in id_fio_doers for fio_id in item["fio_doers_ids"]}
+            # существующие исполнители
+            fio_doers_ids = {fio_id for item in id_fio_doers for fio_id in item.fio_doers_ids}
             fio_doers_query = select(FioDoer.id).where(FioDoer.id.in_(fio_doers_ids))
             result = await self._session.execute(fio_doers_query)
             existing_fio_doers_ids = {row.id for row in result}
 
             if not existing_fio_doers_ids:
-                msg = "No valid FioDoer IDs provided."
-                raise ValueError(msg)
+                detail = "Пользователей не найдено."
+                raise WrongInputError(...)
 
             # Проверяем, что все указанные FioDoer IDs существуют
             invalid_fio_doers_ids = fio_doers_ids - existing_fio_doers_ids
             if invalid_fio_doers_ids:
-                msg = f"FioDoers with IDs {invalid_fio_doers_ids} do not exist."
-                raise ValueError(msg)
+                detail = f"Пользователь с id {invalid_fio_doers_ids} не существует."
+                raise WrongInputError(...)
 
-            # Step 3: Очищаем старые связи в промежуточной таблице
+            program_ids = [item.id for item in id_fio_doers]
             await self._session.execute(
                 delete(ProgramFioDoerAssociation).where(ProgramFioDoerAssociation.program_id.in_(program_ids)),
             )
-
-            # Step 4: Готовим новые записи для промежуточной таблицы
             new_associations = [
-                {"program_id": item["id"], "fio_doer_id": fio_id}
+                {"program_id": item.id, "fio_doer_id": fio_id}
                 for item in id_fio_doers
-                for fio_id in item["fio_doers_ids"]
+                for fio_id in item.fio_doers_ids
             ]
-
-            # Step 5: Добавляем новые связи
+            # обновление приоритетов программ
+            for line in id_fio_doers:
+                id_fio_doers_dict = line.model_dump()
+                # update_data = {k: v for k, v in id_fio_doers_dict.items() if (k != "id" and k != "fio_doers_ids")}
+                update_data = {k: v for k, v in id_fio_doers_dict.items() if k not in ("id" , "fio_doers_ids")}
+                stmt = (
+                    update(self.model)
+                    .filter_by(id=line.id)
+                    .values(**update_data)
+                )
+                result = await self._session.execute(stmt)
+                log.success("Программа {line} обновлена: {update_data}", line=line.id, update_data=update_data)
             if new_associations:
                 await self._session.execute(
                     insert(ProgramFioDoerAssociation),
                     new_associations,
                 )
-
+            log.success("Исполнители программ {doers} обновлены.", doers=existing_fio_doers_ids)
             await self._session.commit()
             log.success("Успешная запись в БД.")
+        except WrongInputError as e:
+            raise WrongInputError(detail=detail) from e
         except Exception as e:
             await self._session.rollback()
             msg = "Failed to update program fio_doers"
             raise RuntimeError(msg) from e
 
-
-    # TODO
-    async def get_all_with_doers(self, filter_dict: dict | None = None) -> list:
-        """Получение всех записей по фильтру схемы pydentic."""
-        # filter_dict = filters.model_dump(exclude_unset=True) if filters else {}
-        log.info(f"Поиск всех записей {self.model.__name__} по фильтрам: {filter_dict}")
+    async def get_all_with_doers(self, status_list: list | None = None) -> list:
+        """Получение всех записей с fio_doer по фильтру схемы pydentic."""
         try:
-            query = select(self.model).filter_by(**filter_dict)
+            query = (select(self.model)
+                     .options(selectinload(Program.fio_doers))
+                     .where(self.model.program_status.in_(status_list)))
             result = await self._session.execute(query)
             records = result.scalars().all()
-        except SQLAlchemyError as e:
-            log.error(f"Ошибка при поиске всех записей по фильтрам {filter_dict}: {e}")
+        except SQLAlchemyError:
+            log.error("Ошибка при поиске всех записей по статусам")
             raise
         else:
-            log.info(f"Найдено {len(records)} записей.")
-            return list(records)
+            log.info("Найдено {len_records} записей.", len_records=len(records))
 
+            return [program.to_dict() | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
+                    for program in records]
 
+    async def get_program_by_fio_id(self, fio_doer_id: int) -> list:
+        """Получение программ по фио исполнителя."""
+        query = (
+            select(Program)
+            .join(Program.fio_doers)
+            .where(FioDoer.id == fio_doer_id)
+            .options(joinedload(Program.fio_doers))
+        )
+
+        result = await self._session.execute(query)
+
+        programs = result.unique().scalars().all()
+        log.info(f"Найдено {len(programs)} программ исполнителя с id {fio_doer_id}.")
+        return [program.to_dict()
+                | {"fio_doer": [fio_doer.to_dict() for fio_doer in program.fio_doers if
+                                fio_doer.id == fio_doer_id][0]}
+                for program in programs]
+
+    async def update_program_status(self, program_id: int, new_status: ProgramStatus) -> None:
+        """Обновление статуса программы."""
+        log.info(f"Обновление статуса программы {program_id} на {new_status}")
+        try:
+            query = (
+                update(self.model)
+                .where(self.model.id == program_id)
+                .values(program_status=new_status)
+            )
+            await self._session.execute(query)
+        except SQLAlchemyError as e:
+            log.error("Ошибка при обновлении статуса программы.")
+            log.exception(e)
+            raise
+        else:
+            log.success("Статус программы {program_id} обновлен на {new_status}.", new_status=new_status,
+                        program_id=program_id)
 
 
 class WoDAO(BaseDAO[WO]):
@@ -199,30 +228,32 @@ class PartDAO(BaseDAO[Part]):
     model = Part
 
     async def get_joined_part_data_by_programs_ids_list(self, ids: list[int]) -> list[dict]:
-        """Получение существующих программ."""
+        """Получение деталей со всеми связанными данными по списку id программ."""
         query = (
             select(self.model)
             .where(self.model.program_id.in_(ids))
             .options(
-                joinedload(self.model.program),
-                joinedload(self.model.wo_number),
-                joinedload(self.model.storage_cell),
+                joinedload(self.model.program)  # программы
+                .options(
+                    selectinload(Program.fio_doers),   # исполнители программы
+                ),
+                joinedload(self.model.wo_number),  # номера заказов
+                joinedload(self.model.storage_cell),  # место хранения
             )
         )
-        # Выполнение запроса
         result = await self._session.execute(query)
 
         # Получение всех записей
         parts = result.scalars().all()
         output = []
+
         for part in parts:
-            # Объединяем данные детали, программы и заказа в один словарь
             combined_data = {
-                **(part.program.to_dict() if part.program else {}),  # Данные программы
-                **(part.wo_number.to_dict() if part.wo_number else {}),  # Данные заказа
+                **(part.program.to_dict() if part.program else {}),  # данные программы
+                **(part.wo_number.to_dict() if part.wo_number else {}),  # данные заказа
+                **(part.storage_cell.to_dict() if part.storage_cell else {}),  # ячейки хранения
+                "fio_doers": [doer.to_dict() for doer in part.program.fio_doers],  # данные исполнителей
                 **part.to_dict(),  # Данные детали
-                # **(part.storage_cell.to_dict() if part.wo_number else {}),
-                # **(getattr(part, "wo_number", {}).to_dict() if getattr(part, "wo_number", None) else {})
             }
             output.append(combined_data)
 
@@ -232,13 +263,15 @@ class PartDAO(BaseDAO[Part]):
         """Получение существующих программ по статусам."""
         query = (
             select(self.model)
-            .join(self.model.program)  # Явное присоединение таблицы Program
-            .where(self.model.program.has(
-                Program.program_status.in_(include_statuses)))  # Проверка program_status через has()
+            .where(
+                self.model.program.has(Program.program_status.in_(include_statuses)),
+            )
             .options(
-                joinedload(self.model.program),  # Предварительная загрузка Program
-                joinedload(self.model.wo_number),  # Предварительная загрузка WO
-                joinedload(self.model.storage_cell),  # Предварительная загрузка StorageCell
+                joinedload(self.model.program).options(
+                    selectinload(Program.fio_doers ),
+                ),
+                joinedload(self.model.wo_number),
+                joinedload(self.model.storage_cell),
             )
         )
 
@@ -249,13 +282,12 @@ class PartDAO(BaseDAO[Part]):
         parts = result.scalars().all()
         output = []
         for part in parts:
-            # Объединяем данные детали, программы и заказа в один словарь
             combined_data = {
                 **(part.program.to_dict() if part.program else {}),  # Данные программы
                 **(part.wo_number.to_dict() if part.wo_number else {}),  # Данные заказа
+                **(part.storage_cell.to_dict() if part.storage_cell else {}),  # ячейки хранения
+                "fio_doers": [doer.to_dict() for doer in part.program.fio_doers],  # данные исполнителей
                 **part.to_dict(),  # Данные детали
-                # **(part.storage_cell.to_dict() if part.wo_number else {}),
-                # **(getattr(part, "wo_number", {}).to_dict() if getattr(part, "wo_number", None) else {})
             }
             output.append(combined_data)
 
@@ -285,6 +317,3 @@ class PartDAO(BaseDAO[Part]):
             log.info(f"Удалено {result.rowcount} записей.")
             await self._session.flush()
             return int(result.rowcount)
-
-
-

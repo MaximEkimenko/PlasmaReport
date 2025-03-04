@@ -9,6 +9,7 @@ class SProgramWithQty(BaseModel):
 
     id: int
     qty_fact: int
+    storage_cell_id: int | None = None
     part_status: PartStatus | None = None
 
 

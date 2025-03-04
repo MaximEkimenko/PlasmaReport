@@ -114,7 +114,7 @@ async def get_programs(
         if program_name["ProgramName"] not in existing_program_names
     ]
     # только нераспределённые и созданные программы разрешены для обновления
-    allowed_status = (ProgramStatus.UNASSIGNED, ProgramStatus.CREATED)
+    allowed_status = (ProgramStatus.UNASSIGNED, ProgramStatus.CREATED, ProgramStatus.ASSIGNED, ProgramStatus.ACTIVE)
     existing_programs = [
         dict(program_name.items())
         for program_name in existing_programs
@@ -191,7 +191,7 @@ async def create_data(active_programs: list[dict],
         wo_mapping.update({wo["WONumber"]: wo["id"] for wo in existing_wos})
         log.info("Заказы уже {wos} существуют в БД. Удаление их из списка для добавления.", wos=existing_wos_names)
 
-    # запись новых  данных в БД
+    # запись новых данных в БД
     try:
         # Начало транзакции
         async with add_session.begin():

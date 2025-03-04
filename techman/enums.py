@@ -9,7 +9,7 @@ class ProgramStatus(enum.StrEnum):
     CREATED = "создана"
     UNASSIGNED = "не распределена"
     ASSIGNED = "распределена"
-    ACTIVE = "в работе"  # TODO Unused in MVP назначает оператор взятием в работу на своём устройстве
+    ACTIVE = "в работе"
     CALCULATING = "количество принимается"
     DONE = "выполнена"
 
@@ -36,10 +36,10 @@ class WoStatus(enum.StrEnum):
 
 
 
-class ProgramPriority(enum.IntEnum):
+class ProgramPriority(enum.StrEnum):
     """Приоритеты программы(сменного задания)."""
 
-    LOW = 4
-    MEDIUM = 3
-    HIGH = 2
-    CRITICAL = 1
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"

@@ -68,7 +68,8 @@ ignore = [
    "RET503",  # явный вызов return
    # TODO FastAPI seprcials
    "N805",     # First argument of a method should be named `self`
-   "TRY301"
+   "TRY301",
+   "RUF015"
 ]
 
 [lint.flake8-quotes]

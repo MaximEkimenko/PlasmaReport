@@ -6,48 +6,71 @@ from fastapi import Query, Depends, APIRouter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from exceptions import EmptyAnswerError, AlchemyDatabaseError, ServerNotImplementedError, UserAlreadyExistsException
+from exceptions import (
+    EmptyAnswerError,
+    WrongDoerIdsError,
+    AlchemyDatabaseError,
+    ServerNotImplementedError,
+    UserAlreadyExistsException,
+)
 from master.dao import FioDoerDAO
 from techman.dao import PartDAO, ProgramDAO
 from master.enums import Jobs
 from logger_config import log
 from techman.enums import ProgramStatus
-from master.schemas import SFioDoer, SProgramsStatus
+from master.schemas import SFioDoer, SProgramIDWithFios
 from dependencies.dao_dep import get_session_with_commit, get_session_without_commit
 
 router = APIRouter()
 
 
-@router.get("/get_programs_for_assignment", tags=["master"])
-async def get_programs_for_assignment(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                                      # user_data: Annotated[User, Depends(get_current_techman_user)]
-                                      ) -> list[dict]:
-    """Получение списка программ со статусом CREATED (создана).
-
-    Для последующей передачи в работу и назначения исполнителя мастером.
-    """
-    programs_select_table = ProgramDAO(session=select_session)
-    result = await programs_select_table.find_all(filters=SProgramsStatus(program_status=ProgramStatus.CREATED))
-    programs_to_assign = [program.to_dict() for program in result]
-    if not programs_to_assign:
-        raise EmptyAnswerError(detail="Нет программ для передачи в работу.")
-
-    return programs_to_assign
+# @router.get("/get_programs_for_assignment", tags=["master"])
+# async def get_programs_for_assignment(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+#                                       # user_data: Annotated[User, Depends(get_current_techman_user)]
+#                                       ) -> list[dict]:
+#     """Получение списка программ со статусом CREATED (создана).
+#
+#     Для последующей передачи в работу и назначения исполнителя мастером.
+#     """
+#     programs_select_table = ProgramDAO(session=select_session)
+#     result = await programs_select_table.get_all_with_doers(filter_dict={"program_status": ProgramStatus.ASSIGNED})
+#     # programs_to_assign = [program.to_dict() | {"fio_doers": list(program.fio_doers)} for program in result]
+#     # print(programs_to_assign)
+#     if not result:
+#         raise EmptyAnswerError(detail="Нет программ для передачи в работу.")
+#
+#     return result
 
 
 @router.get("/get_parts_by_program_id", tags=["master", "logist"])
 async def get_parts_by_program_id(program_id: int,
                                   select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+                                  fio_doer_id: int | None = None,
                                   # user_data: Annotated[User, Depends(get_current_techman_user)]
                                   ) -> list[dict]:
-    """Получение списка деталей программы по ее id.
+    """Получение списка деталей программы по ее id. С опциональным параметром fio_doer_id.
 
-    Пример ввода: 1
+    Пример ввода: `1`.
+
+    При передаче id исполнителя (fio_doer_id), который участвовал в программе, список fio_doers будет
+    преобразован в словарь только с этим исполнителем. Если fio_doer_id не распределён в программе,
+    то список останется бех изменений.
     """
     parts_select_table = PartDAO(session=select_session)
     parts = await parts_select_table.get_joined_part_data_by_programs_ids_list([program_id])
     if not parts:
         raise EmptyAnswerError(detail="Нет деталей для данной программы.")
+
+    fio_doer_select_table = FioDoerDAO(session=select_session)
+    one_fio_doer = await fio_doer_select_table.find_one_or_none_by_id(fio_doer_id)
+
+    # фильтрация по исполнителю программы
+    if fio_doer_id:
+        for part in parts:
+            doer_ids = [fio_doer["id"] for fio_doer in part["fio_doers"]]
+            if one_fio_doer.id in doer_ids:
+                part.update({"fio_doers": one_fio_doer.to_dict()})
+
     return parts
 
 
@@ -125,8 +148,8 @@ async def get_programs_for_assignment_and_doers(
     }
     """
     programs_select_table = ProgramDAO(session=select_session)
-    result = await programs_select_table.find_all(filters=SProgramsStatus(program_status=ProgramStatus.CREATED))
-    programs_to_assign = [program.to_dict() for program in result]
+    allowed_statuses = [ProgramStatus.CREATED, ProgramStatus.UNASSIGNED, ProgramStatus.ASSIGNED, ProgramStatus.ACTIVE]
+    programs_to_assign = await programs_select_table.get_all_with_doers(status_list=allowed_statuses)
     if not programs_to_assign:
         raise EmptyAnswerError(detail="Нет программ для передачи в работу.")
 
@@ -140,24 +163,40 @@ async def get_programs_for_assignment_and_doers(
 
 
 @router.post("/assign_program", tags=["master"])
-async def assign_program(program_ids_with_fios_id: list[dict],
-                         # program_ids_with_fios_id: list[SProgramIDWithFios],
-                         add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
-                         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                         # user_data: Annotated[User, Depends(get_current_techman_user)]
-                         ) -> dict:
+async def assign_program(
+        # program_ids_with_fios_id: list[dict],
+        program_ids_with_fios_id: list[SProgramIDWithFios],
+        add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
+        select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+        # user_data: Annotated[User, Depends(get_current_techman_user)]
+) -> dict:
     """Передача программ в работу оператору мастером (распределение).
 
     Перевод программы в статус ASSIGNED.
 
     Пример ввода:
     `[
-        {"id":13, "fio_doers_ids": [1, 2, 3]},
-        {"id":14, "fio_doers_ids": [4, 5, 6]}
+        {
+        "id":13,
+         "fio_doers_ids": [1, 2, 3],
+        "program_priority": "MEDIUM"
+        },
+        {
+        "id":14,
+        "fio_doers_ids": [4, 5, 6],
+        "program_priority": "HIGH"
+        }
     ]`
+    program_priority - необязательный параметр и по умолчанию = LOW
     """
+    # проверка на дубликаты id
+    for line in program_ids_with_fios_id:
+        fio_doers_ids = line.fio_doers_ids
+        if len(set(fio_doers_ids)) != len(fio_doers_ids):
+            raise WrongDoerIdsError
+
     program_select_table = ProgramDAO(session=select_session)
-    for program_id in [program_id_with_fio["id"] for program_id_with_fio in program_ids_with_fios_id]:
+    for program_id in [program_id_with_fio.id for program_id_with_fio in program_ids_with_fios_id]:
         exist_programs = await program_select_table.find_one_or_none_by_id(program_id)
         if not exist_programs:
             log.warning("Попытка обновления не существующей программы с id={program_id}.", program_id=program_id)
@@ -165,8 +204,7 @@ async def assign_program(program_ids_with_fios_id: list[dict],
 
     try:
         program_update_table = ProgramDAO(session=add_session)
-        # await program_update_table.bulk_update(records=program_ids_with_fios_id)
-        await program_update_table.update_doer_fios(program_ids_with_fios_id)
+        await program_update_table.update_fio_doers(program_ids_with_fios_id)
     except SQLAlchemyError as e:
         await add_session.rollback()
         log.error("Ошибка при работе с БД.")
@@ -186,6 +224,21 @@ async def cancel_assign_program(  # program_ids_with_fios_id: list[SProgramIDWit
         # user_data: Annotated[User, Depends(get_current_techman_user)]
 ) -> None:
     """Отмена передачи программ в работу оператору мастером (отмена распределения).
+
+    Перевод программы в статус CREATED. Отмена возможна только для программ со статусом ASSIGNED.
+
+    # TODO после реализации основного процесса
+    """
+    return ServerNotImplementedError
+
+
+@router.post("/update_assign_program", tags=["master"])
+async def update_assign_program(  # program_ids_with_fios_id: list[SProgramIDWithFio],
+        # add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
+        # select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+        # user_data: Annotated[User, Depends(get_current_techman_user)]
+) -> None:
+    """Обновление передачи программ в работу оператору мастером (отмена распределения).
 
     Перевод программы в статус CREATED. Отмена возможна только для программ со статусом ASSIGNED.
 

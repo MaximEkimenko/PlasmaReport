@@ -71,6 +71,12 @@ ServerNotImplementedError = HTTPException(
     detail="Функционал не реализован на сервере.",
 )
 
+WrongDoerIdsError = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Исполнители дублируются.",
+)
+
+
 
 class WrongProgramStatusError(HTTPException):
     """Исключение для необрабатываемого endpoint статуса программы."""
@@ -78,6 +84,9 @@ class WrongProgramStatusError(HTTPException):
     def __init__(self, detail: str, status_code: int = status.HTTP_409_CONFLICT) -> None:
         """Инициализация исключения."""
         super().__init__(status_code=status_code, detail=detail)
+
+class WrongInputError(WrongProgramStatusError):
+    """Исключение для неверного ввода."""
 
 
 class ExistingDatabaseEntityError(WrongProgramStatusError):

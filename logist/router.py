@@ -21,16 +21,20 @@ router = APIRouter()
 async def get_programs_for_calculation(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
                                        # user_data: Annotated[User, Depends(get_current_techman_user)]
                                        ) -> list[dict]:
-    """Получение списка программ со статусом ASSIGNED (распределена).
+    """Получение списка программ со статусом.
 
+    ProgramStatus.CALCULATING, ProgramStatus.DONE = количество принимается, выполнена.
     Для последующей количественной приёмки логистом.
     """
     programs_select_table = ProgramDAO(session=select_session)
     # result = await programs_select_table.find_all(filters=SPrograms(program_status=ProgramStatus.ASSIGNED))
     # programs_to_calculate = [program.to_dict() for program in result]
     programs_to_calculate = await programs_select_table.find_programs_by_statuses(
-        [ProgramStatus.ASSIGNED,
-         ProgramStatus.DONE],
+        [
+            # ProgramStatus.ASSIGNED,
+            ProgramStatus.DONE,
+            ProgramStatus.CALCULATING,
+        ],
     )
     if not programs_to_calculate:
         raise EmptyAnswerError(detail="Нет программ для количественной приёмки.")
@@ -46,14 +50,18 @@ async def calculate_parts(parts_with_qty: list[SProgramWithQty],
                           ) -> dict:
     """Занесение количества принятого логистом.
 
-    На ввод подаётся список словарей вида {"part_id": id детали, "qty_fact": фактически выполненное количество}}
+    На ввод подаётся список словарей вида {"part_id": id детали,
+    "qty_fact": фактически выполненное количество,
+    "storage_cell_id": id ячейки хранения}.
+    }}
 
+    storage_cell_id - ПОКА необязательное поле значение, но относится к нему как заполняемому в будущем.
     Пример ввода:
 
     ```
     [
-        {"id": 13, "qty_fact": 3},
-        {"id": 14, "qty_fact": 2}
+        {"id": 13, "qty_fact": 3, "storage_cell_id": 4},
+        {"id": 14, "qty_fact": 2, "storage_cell_id": 3}
      ]
      ```
     """
@@ -82,19 +90,20 @@ async def calculate_parts(parts_with_qty: list[SProgramWithQty],
     log.success(msg)
 
     # установка статуса программы в зависимости от статуса деталей
+    # TODO нужно ли это делать? Оставить только ручное изменение последнего статуса программы?
+    #  чтобы работало автоматическое обновление статуса нужен промежуточный коммит с деталями
     for program_id in programs_ids:
         program_parts = await part_select_table.get_joined_part_data_by_programs_ids_list([program_id])
 
         parts_statuses = [part["part_status"] for part in program_parts]
-        if all(status == PartStatus.DONE_FULL or status == PartStatus.DONE_PARTIAL for status in  # noqa
-               parts_statuses):
+        if all(status == PartStatus.DONE_FULL for status in parts_statuses):
             program_status = ProgramStatus.DONE
             program_update_table = ProgramDAO(session=add_session)
             await (program_update_table.bulk_update(
-                records=[SProgramsStatus(id=program_id, program_status=program_status.value)]))
-            log.success("Программа {program_id} получила статус {program_status.}.",
+                records=[SProgramsStatus(id=program_id, program_status=program_status)]))
+            log.success("Программа {program_id} получила статус {program_status}.",
                         program_id=program_id,
-                        program_status=program_status.value)
+                        program_status=program_status)
         else:
             log.debug("Статус программы {program_id} не менялся. Не все детали выполнены.", program_id=program_id)
     return {"msg": msg}
