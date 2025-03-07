@@ -98,12 +98,14 @@ class ProgramDAO(BaseDAO[Program]):
 
             if not existing_fio_doers_ids:
                 detail = "Пользователей не найдено."
+                # TODO вернуть словарь с ключами status: error и msg: по которому выше raise WrongInputError(msg)
                 raise WrongInputError(...)
 
             # Проверяем, что все указанные FioDoer IDs существуют
             invalid_fio_doers_ids = fio_doers_ids - existing_fio_doers_ids
             if invalid_fio_doers_ids:
                 detail = f"Пользователь с id {invalid_fio_doers_ids} не существует."
+                # TODO вернуть словарь с ключами status: error и msg: по которому выше raise WrongInputError(msg)
                 raise WrongInputError(...)
 
             program_ids = [item.id for item in id_fio_doers]
@@ -118,14 +120,18 @@ class ProgramDAO(BaseDAO[Program]):
             # обновление приоритетов программ
             for line in id_fio_doers:
                 id_fio_doers_dict = line.model_dump()
-                # update_data = {k: v for k, v in id_fio_doers_dict.items() if (k != "id" and k != "fio_doers_ids")}
-                update_data = {k: v for k, v in id_fio_doers_dict.items() if k not in ("id" , "fio_doers_ids")}
+                # update_data = {field: value for field, value in id_fio_doers_dict.items()
+                # if (field != "id" and field != "fio_doers_ids")}
+                update_data = {
+                    field: value for field, value in id_fio_doers_dict.items()
+                    if field not in ("id", "fio_doers_ids")
+                }
                 stmt = (
                     update(self.model)
                     .filter_by(id=line.id)
                     .values(**update_data)
                 )
-                result = await self._session.execute(stmt)
+                await self._session.execute(stmt)
                 log.success("Программа {line} обновлена: {update_data}", line=line.id, update_data=update_data)
             if new_associations:
                 await self._session.execute(
@@ -135,9 +141,11 @@ class ProgramDAO(BaseDAO[Program]):
             log.success("Исполнители программ {doers} обновлены.", doers=existing_fio_doers_ids)
             await self._session.commit()
             log.success("Успешная запись в БД.")
+            # TODO вернуть словарь с ключём status: success, msg с успехом
         except WrongInputError as e:
             raise WrongInputError(detail=detail) from e
         except Exception as e:
+            # TODO вернуть словарь с ключами status: error и msg: по которому выше raise HttpException(msg)
             await self._session.rollback()
             msg = "Failed to update program fio_doers"
             raise RuntimeError(msg) from e
@@ -235,7 +243,7 @@ class PartDAO(BaseDAO[Part]):
             .options(
                 joinedload(self.model.program)  # программы
                 .options(
-                    selectinload(Program.fio_doers),   # исполнители программы
+                    selectinload(Program.fio_doers),  # исполнители программы
                 ),
                 joinedload(self.model.wo_number),  # номера заказов
                 joinedload(self.model.storage_cell),  # место хранения
@@ -268,7 +276,7 @@ class PartDAO(BaseDAO[Part]):
             )
             .options(
                 joinedload(self.model.program).options(
-                    selectinload(Program.fio_doers ),
+                    selectinload(Program.fio_doers),
                 ),
                 joinedload(self.model.wo_number),
                 joinedload(self.model.storage_cell),

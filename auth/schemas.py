@@ -12,8 +12,8 @@ from auth.password_utils import get_password_hash
 class EmailModel(BaseModel):
     """Базовая схема для аутентификации."""
 
-    email: EmailStr = Field(description=f"Электронная почта. К регистрации разрешены только {ALLOWED_DOMAINS}.",
-                            example=f"user@{ALLOWED_DOMAINS[0]}")
+    email: EmailStr = Field(..., description=f"Электронная почта. К регистрации разрешены только {ALLOWED_DOMAINS}.",
+                            examples=[f"user@{ALLOWED_DOMAINS[0]}"])
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("email")
@@ -39,12 +39,12 @@ class UserBase(EmailModel):
     """Базовый пользователь."""
 
     first_name: str = Field(min_length=3, max_length=20, description="Имя, от 3 до 20 символов",
-                            example="Иван")
+                            examples=["Иван"])
     last_name: str = Field(min_length=3, max_length=20, description="Фамилия, от 3 до 20 символов",
-                           example="Иванов")
+                           examples=["Иванов"])
     role: UserRole | None = Field(default=None, description="Роль пользователя. Не обязательное поле. "
                                                              "По умолчанию присваивается USER.",
-                                  example="USER")
+                                  examples=["USER"])
 
     @field_validator("first_name", "last_name")
     def validate_first_name_last_name(cls, value: str) -> str:
@@ -59,9 +59,9 @@ class SUserRegister(UserBase):
     """Схема для регистрации пользователя."""
 
     password: str = Field(min_length=5, max_length=20, description="Пароль, от 5 до 20 знаков",
-                          example="StrongPass1!")
+                          examples=["StrongPass1!"])
     confirm_password: str = Field(min_length=5, max_length=50, description="Повторите пароль",
-                                  example="StrongPass1!")
+                                  examples=["StrongPass1!"])
 
     @model_validator(mode="after")
     def check_password(self) -> Self:
@@ -78,7 +78,7 @@ class SUserAddDB(UserBase):
 
     password: str = Field(min_length=5,
                           description="Пароль в формате HASH-строки",
-                          example="StrongPass1!")
+                          examples=["StrongPass1!"])
 
 
 class SUserAuth(EmailModel):
@@ -87,10 +87,10 @@ class SUserAuth(EmailModel):
     password: str = Field(min_length=5,
                           max_length=20,
                           description="Пароль, от 5 до 20 знаков",
-                          example="StrongPass1!")
+                          examples=["StrongPass1!"])
 
 
 class SUserInfo(UserBase):
     """Информация о пользователях."""
 
-    id: int = Field(description="Идентификатор пользователя", example=1)
+    id: int = Field(description="Идентификатор пользователя", examples=[1])

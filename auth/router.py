@@ -42,15 +42,7 @@ async def register_user(user_data: SUserRegister,
 async def auth_user(response: Response,
                     user_data: SUserAuth,
                     session: Annotated[AsyncSession, Depends(get_session_without_commit)]) -> dict:
-    """Аутентификация пользователя.
-
-    - **email**: Действительная электронная почта с разрешённым доменом.
-    - **password**: Пароль пользователя, длина которого должна быть от 5 до 20 символов.
-
-    Возвращает:
-    - **ok**: Статус операции (`True` при успехе).
-    - **message**: Сообщение об успешной аутентификации.
-    """
+    """Аутентификация пользователя."""
     users_dao = UsersDAO(session)
     user = await users_dao.find_one_or_none(
         filters=EmailModel(email=user_data.email),

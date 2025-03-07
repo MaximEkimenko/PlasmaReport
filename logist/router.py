@@ -93,7 +93,7 @@ async def calculate_parts(parts_with_qty: list[SProgramWithQty],
     # TODO нужно ли это делать? Оставить только ручное изменение последнего статуса программы?
     #  чтобы работало автоматическое обновление статуса нужен промежуточный коммит с деталями
     for program_id in programs_ids:
-        program_parts = await part_select_table.get_joined_part_data_by_programs_ids_list([program_id])
+        program_parts = await part_update_table.get_joined_part_data_by_programs_ids_list([program_id])
 
         parts_statuses = [part["part_status"] for part in program_parts]
         if all(status == PartStatus.DONE_FULL for status in parts_statuses):
