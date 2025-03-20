@@ -1,6 +1,7 @@
 """FastAPI зависимости для сервиса auth."""
 
 from datetime import UTC, datetime
+from collections.abc import AsyncGenerator
 
 from jose import JWTError, ExpiredSignatureError, jwt
 from fastapi import Depends, Request
@@ -8,17 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
 from auth.dao import UsersDAO
-from auth.enums import UserRole
 from exceptions import (
     TokenNoFound,
     NoJwtException,
     NoUserIdException,
-    ForbiddenException,
     TokenExpiredException,
     UserNotFoundException,
 )
 from auth.models import User
-from dependencies.dao_dep import get_session_without_commit
+from dependencies.dao_dep import get_async_session, get_session_without_commit
 
 
 def get_access_token(request: Request) -> str:
@@ -90,15 +89,17 @@ async def get_current_user(token: str = Depends(get_access_token),
     return user
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    """Проверяем права пользователя как администратора."""
-    if current_user.role == UserRole.ADMIN:
-        return current_user
-    raise ForbiddenException
+# async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+#     """Проверяем права пользователя как администратора."""
+#     if current_user.role == UserRole.ADMIN:
+#         return current_user
+#     raise ForbiddenException
+#
+#
 
 
-async def get_current_techman_user(current_user: User = Depends(get_current_user)) -> User:
-    """Проверяем права пользователя как технолога."""
-    if current_user.role == UserRole.TECHMAN:
-        return current_user
-    raise ForbiddenException
+
+async def get_user_db(session: AsyncSession = Depends(get_async_session)) -> AsyncGenerator:
+    """Зависимость для получения пользователя из БД."""
+    # yield SQLAlchemyUserDatabase(session, User)
+    yield User.get_db(session=session)

@@ -3,6 +3,7 @@
 from typing import Self
 
 from pydantic import Field, EmailStr, BaseModel, ConfigDict, field_validator, model_validator
+from fastapi_users import schemas
 
 from auth.enums import UserRole
 from settings.constants import ALLOWED_DOMAINS
@@ -43,7 +44,7 @@ class UserBase(EmailModel):
     last_name: str = Field(min_length=3, max_length=20, description="Фамилия, от 3 до 20 символов",
                            examples=["Иванов"])
     role: UserRole | None = Field(default=None, description="Роль пользователя. Не обязательное поле. "
-                                                             "По умолчанию присваивается USER.",
+                                                            "По умолчанию присваивается USER.",
                                   examples=["USER"])
 
     @field_validator("first_name", "last_name")
@@ -94,3 +95,28 @@ class SUserInfo(UserBase):
     """Информация о пользователях."""
 
     id: int = Field(description="Идентификатор пользователя", examples=[1])
+
+
+# FastAPI Users
+class UserRead(schemas.BaseUser[int]):
+    """Класс для описания пользователя в БД. FastAPI Users."""
+
+    first_name: str
+    last_name: str
+    role: UserRole | None
+
+
+class UserCreate(schemas.BaseUserCreate):
+    """Класс для создания пользователя. FastAPI Users."""
+
+    first_name: str
+    last_name: str
+    role: UserRole | None
+
+
+class UserUpdate(schemas.BaseUserUpdate):
+    """Класс для обновления пользователя. FastAPI Users."""
+
+    first_name: str
+    last_name: str
+    role: UserRole | None

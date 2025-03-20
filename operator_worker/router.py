@@ -4,6 +4,8 @@ from typing import Annotated
 from fastapi import Depends, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.users import get_operator_user
+from auth.models import User
 from techman.dao import PartDAO, ProgramDAO
 from logger_config import log
 from techman.enums import ProgramStatus
@@ -16,16 +18,18 @@ router = APIRouter()
 @router.get("/get_my_programs", tags=["operator"])
 async def get_my_programs(fio_id: int,
                           select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                          # add_session: Annotated[AsyncSession, Depends(get_session_with_commit)]
+                          user_data: Annotated[User, Depends(get_operator_user)],  # noqa ARG001
                           ) -> list:
     """Получение всех программ, оператора."""
     program_select_table = ProgramDAO(session=select_session)
-    return await program_select_table.get_program_by_fio_id(fio_id)
+    allowed_statuses = (ProgramStatus.ACTIVE, ProgramStatus.ASSIGNED, ProgramStatus.CALCULATING)
+    return await program_select_table.get_program_by_fio_id_with_status(fio_id, statuses=allowed_statuses)
 
 
 @router.get("/start_program", tags=["operator"])
 async def start_program(program_id: int,
                         add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
+                        user_data: Annotated[User, Depends(get_operator_user)],  # noqa ARG001
                         new_status: ProgramStatus = ProgramStatus.ACTIVE,
                         ) -> dict | None:
     """Запуск программы в работу оператором.
@@ -44,6 +48,7 @@ async def start_program(program_id: int,
 @router.post("/this_is_my_parts", tags=["operator"])
 async def this_is_my_parts(fio_parts: dict,
                            add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
+                           user_data: Annotated[User, Depends(get_operator_user)],  # noqa ARG001
                            ) -> dict | None:
     """Назначение детали оператору в выполнение, присвоение программе статуса 'количество принимается'.
 

@@ -120,8 +120,6 @@ class ProgramDAO(BaseDAO[Program]):
             # обновление приоритетов программ
             for line in id_fio_doers:
                 id_fio_doers_dict = line.model_dump()
-                # update_data = {field: value for field, value in id_fio_doers_dict.items()
-                # if (field != "id" and field != "fio_doers_ids")}
                 update_data = {
                     field: value for field, value in id_fio_doers_dict.items()
                     if field not in ("id", "fio_doers_ids")
@@ -167,11 +165,14 @@ class ProgramDAO(BaseDAO[Program]):
             return [program.to_dict() | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
                     for program in records]
 
-    async def get_program_by_fio_id(self, fio_doer_id: int) -> list:
+    async def get_program_by_fio_id_with_status(self, fio_doer_id: int, statuses: tuple[ProgramStatus, ...]) -> list:
         """Получение программ по фио исполнителя."""
         query = (
-            select(Program)
-            .join(Program.fio_doers)
+            select(self.model)
+            .where(self.model.program_status.in_(statuses))
+            # .in_(wo_numbers)
+            # .WONumber.in_(wo_numbers)
+            .join(self.model.fio_doers)
             .where(FioDoer.id == fio_doer_id)
             .options(joinedload(Program.fio_doers))
         )

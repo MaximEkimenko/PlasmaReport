@@ -5,8 +5,10 @@ from fastapi import Depends, APIRouter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.users import get_logist_user
 from exceptions import EmptyAnswerError, AlchemyDatabaseError, ExistingDatabaseEntityError
 from logist.dao import StorageCellDAO
+from auth.models import User
 from techman.dao import PartDAO, ProgramDAO
 from logger_config import log
 from techman.enums import PartStatus, ProgramStatus
@@ -19,7 +21,7 @@ router = APIRouter()
 
 @router.get("/get_programs_for_calculation", tags=["logist"])
 async def get_programs_for_calculation(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                                       # user_data: Annotated[User, Depends(get_current_techman_user)]
+                                       user_data: Annotated[User, Depends(get_logist_user)],  # noqa ARG001
                                        ) -> list[dict]:
     """Получение списка программ со статусом.
 
@@ -27,8 +29,6 @@ async def get_programs_for_calculation(select_session: Annotated[AsyncSession, D
     Для последующей количественной приёмки логистом.
     """
     programs_select_table = ProgramDAO(session=select_session)
-    # result = await programs_select_table.find_all(filters=SPrograms(program_status=ProgramStatus.ASSIGNED))
-    # programs_to_calculate = [program.to_dict() for program in result]
     programs_to_calculate = await programs_select_table.find_programs_by_statuses(
         [
             # ProgramStatus.ASSIGNED,
@@ -46,7 +46,7 @@ async def get_programs_for_calculation(select_session: Annotated[AsyncSession, D
 async def calculate_parts(parts_with_qty: list[SProgramWithQty],
                           select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
                           add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
-                          # user_data: Annotated[User, Depends(get_current_techman_user)]
+                          user_data: Annotated[User, Depends(get_logist_user)],  # noqa ARG001
                           ) -> dict:
     """Занесение количества принятого логистом.
 
@@ -113,7 +113,7 @@ async def calculate_parts(parts_with_qty: list[SProgramWithQty],
 async def create_storage_cell(storage_cell: SStorageCell,
                               add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
                               select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                              # user_data: Annotated[User, Depends(get_current_techman_user)]
+                              user_data: Annotated[User, Depends(get_logist_user)],  # noqa ARG001
                               ) -> dict:
     """Создание места хранения деталей.
 

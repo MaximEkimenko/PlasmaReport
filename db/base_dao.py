@@ -14,8 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.database import Base
 from logger_config import log
 
-# from .database import Base
-
 T = TypeVar("T", bound=Base)
 
 

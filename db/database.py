@@ -53,6 +53,8 @@ class Base(AsyncAttrs, DeclarativeBase):
         return {column.key: getattr(self, column.key) for column in columns}
 
 
+
+
 # def connection(method):
 #     async def wrapper(*args, **kwargs):
 #         async with async_session_maker() as session:

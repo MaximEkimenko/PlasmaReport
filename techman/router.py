@@ -11,7 +11,9 @@ from fastapi import Query, Depends, APIRouter
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.users import get_techman_user
 from exceptions import InvalidSigmaData, AlchemyDatabaseError, WrongProgramStatusError, ExistingDatabaseEntityError
+from auth.models import User
 from techman.dao import WoDAO, PartDAO, ProgramDAO
 from logger_config import log
 from techman.enums import ProgramStatus
@@ -34,7 +36,7 @@ async def get_wos(start_date: Annotated[date, Query(..., description="Начал
                                                     example="2025-02-01")],
                   end_date: Annotated[date, Query(..., description="Конечная дата создания",
                                                   example="2025-02-28")],
-                  # user_data: Annotated[User, Depends(get_current_techman_user)]
+                  user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
                   ) -> list[dict]:
     """Эндпоинт получения списка активных заказов из таблицы sigma WO.
 
@@ -58,7 +60,7 @@ async def get_wos(start_date: Annotated[date, Query(..., description="Начал
 @router.get("/get_order_parts/{wo_number}", tags=["techman", "sigma"],
             response_model=list[dict[str, str | datetime.datetime]])
 async def get_wo_parts(wo_number: str,
-                       # user_data: Annotated[User, Depends(get_current_techman_user)]
+                       user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
                        ) -> list[dict[str, Any]]:
     """Эндпоинт получения данных по конкретному `wo_number` заказу из таблицы sigma WO."""
     return await get_parts_by_wo(wo_number)
@@ -66,7 +68,7 @@ async def get_wo_parts(wo_number: str,
 
 @router.get("/get_program_parts/{program_name}", tags=["techman", "sigma"])
 async def get_program_parts(program_name: str,
-                            # user_data: Annotated[User, Depends(get_current_techman_user)]
+                            user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
                             ) -> list[dict[str, Any]]:
     """Эндпоинт получения данных по конкретной `program_name` программе из таблицы sigma Program.
 
@@ -81,7 +83,7 @@ async def get_programs(
                                           example="2025-02-01")],
         end_date: Annotated[date, Query(..., description="Конечная дата создания",
                                         example="2025-02-28")],
-        # user_data: Annotated[User, Depends(get_current_techman_user)],
+        user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
 ) -> list[dict]:
     """Эндпоинт получения списка созданных программ из таблицы sigma Program.
@@ -122,11 +124,12 @@ async def get_programs(
     ]
     return new_programs + existing_programs
 
+
 @router.post("/create_data", tags=["techman"])
 async def create_data(active_programs: list[dict],
                       add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
                       select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                      # user_data: Annotated[User, Depends(get_current_techman_user)]
+                      user_data: Annotated[User, Depends(get_techman_user)], # noqa ARG001
                       ) -> dict:
     """Заполнение БД PlasmaReport данными деталей в работе из sigma nest.
 
@@ -232,7 +235,7 @@ async def update_data(
         active_programs: list[SUpdateProgramData],
         update_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-        # user_data: Annotated[User, Depends(get_current_techman_user)]
+        user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
 ) -> dict:
     """Обновление БД PlasmaReport данными деталей в работе из sigma nest.
 

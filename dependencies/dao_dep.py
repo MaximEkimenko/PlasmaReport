@@ -29,3 +29,12 @@ async def get_session_without_commit() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Получение асинхронной сессии. По умолчанию с автоматическим коммитом."""
+    async with async_session_maker() as session:
+        yield session
+
+
+

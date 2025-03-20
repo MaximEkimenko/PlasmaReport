@@ -7,9 +7,8 @@ from decimal import Decimal
 from sqlalchemy import TEXT, TIMESTAMP, ForeignKey, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
+from auth.models import User
 from db.database import Base, uniq_string
-
-# from master.models import FioDoer
 from master.enums import Jobs
 from techman.enums import WoStatus, PartStatus, ProgramStatus, ProgramPriority
 
@@ -24,6 +23,7 @@ class ProgramFioDoerAssociation(Base):
     __table_args__ = (
         UniqueConstraint("program_id", "fio_doer_id", name="uix_program_fio_doer"),  # Уникальность сочетания
     )
+
 
 class Program(Base):
     """Модель программ плазменной резки."""
@@ -70,11 +70,15 @@ class Program(Base):
         "FioDoer", secondary="programfiodoerassociation", back_populates="programs",
     )
 
+    def __str__(self) -> str:
+        """Строковое представление для админ панели."""
+        return self.__class__.__name__ + f"({self.ProgramName})"
 
 
 class FioDoer(Base):
     """Модель исполнителей."""
 
+    # TODO добавить поле fio_doer составным из user.first_name и user.last_name
     fio_doer: Mapped[uniq_string]
     position: Mapped[Jobs] = mapped_column(default=Jobs.OPERATOR)
     is_active: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
@@ -84,6 +88,16 @@ class FioDoer(Base):
     )
 
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="done_by_fio_doer")
+
+    # Связь one-to-one с User
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", name="fk_fiodoer_user_id"), unique=True, nullable=True,
+    )
+    user: Mapped[User] = relationship(back_populates="fio_doer")
+
+    def __str__(self) -> str:
+        """Строковое представление для админ панели."""
+        return self.__class__.__name__ + f"({self.fio_doer})"
 
 
 class WO(Base):
@@ -150,6 +164,10 @@ class Part(Base):
     __table_args__ = (
         UniqueConstraint("PartName", "program_id", "wo_number_id", name="uq_part_program_wo"),
     )
+
+    def __str__(self) -> str:
+        """Строковое представление для админ панели."""
+        return self.__class__.__name__ + f"({self.PartName})"
 
 
 class StorageCell(Base):

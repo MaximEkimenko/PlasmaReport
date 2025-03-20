@@ -6,6 +6,7 @@ from fastapi import Query, Depends, APIRouter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.users import get_master_user
 from exceptions import (
     EmptyAnswerError,
     WrongDoerIdsError,
@@ -14,6 +15,7 @@ from exceptions import (
     UserAlreadyExistsException,
 )
 from master.dao import FioDoerDAO
+from auth.models import User
 from techman.dao import PartDAO, ProgramDAO
 from master.enums import Jobs
 from logger_config import log
@@ -45,8 +47,8 @@ router = APIRouter()
 @router.get("/get_parts_by_program_id", tags=["master", "logist"])
 async def get_parts_by_program_id(program_id: int,
                                   select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+                                  user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
                                   fio_doer_id: int | None = None,
-                                  # user_data: Annotated[User, Depends(get_current_techman_user)]
                                   ) -> list[dict]:
     """Получение списка деталей программы по ее id. С опциональным параметром fio_doer_id.
 
@@ -76,13 +78,14 @@ async def get_parts_by_program_id(program_id: int,
 
 @router.get("/get_parts_by_statuses", tags=["master", "logist"])
 async def get_parts_by_statuses(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+                                user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
                                 include_program_statuses: Annotated[tuple[str, ...],
                                 Query()] = (ProgramStatus.CREATED,
                                             ProgramStatus.UNASSIGNED,
                                             ProgramStatus.ASSIGNED,
                                             ProgramStatus.ACTIVE,
                                             ),
-                                # user_data: Annotated[User, Depends(get_current_techman_user)]
+
                                 ) -> list[dict]:
     """Получение программ по списку статусов.
 
@@ -103,7 +106,7 @@ async def get_parts_by_statuses(select_session: Annotated[AsyncSession, Depends(
 async def create_doer(fio_doer: SFioDoer,
                       add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
                       select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                      # user_data: Annotated[User, Depends(get_current_techman_user)]
+                      user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
                       ) -> dict:
     """Создание исполнителя для выполнения программы.
 
@@ -124,7 +127,7 @@ async def create_doer(fio_doer: SFioDoer,
 
 @router.get("/get_doers", tags=["master"])
 async def get_doers_list(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                         # user_data: Annotated[User, Depends(get_current_techman_user)]
+                         user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
                          ) -> list[dict]:
     """Получение списка всех исполнителей."""
     fio_select_table = FioDoerDAO(session=select_session)
@@ -137,7 +140,7 @@ async def get_doers_list(select_session: Annotated[AsyncSession, Depends(get_ses
 @router.get("/get_programs_for_assignment_and_doers", tags=["master"])
 async def get_programs_for_assignment_and_doers(
         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-        # user_data: Annotated[User, Depends(get_current_techman_user)]
+        user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
 ) -> dict:
     """Получение словаря со списками программ и исполнителей.
 
@@ -164,11 +167,10 @@ async def get_programs_for_assignment_and_doers(
 
 @router.post("/assign_program", tags=["master"])
 async def assign_program(
-        # program_ids_with_fios_id: list[dict],
         program_ids_with_fios_id: list[SProgramIDWithFios],
         add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-        # user_data: Annotated[User, Depends(get_current_techman_user)]
+        user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
 ) -> dict:
     """Передача программ в работу оператору мастером (распределение).
 
@@ -222,6 +224,7 @@ async def cancel_assign_program(  # program_ids_with_fios_id: list[SProgramIDWit
         # add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
         # select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
         # user_data: Annotated[User, Depends(get_current_techman_user)]
+        user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
 ) -> None:
     """Отмена передачи программ в работу оператору мастером (отмена распределения).
 
@@ -237,6 +240,7 @@ async def update_assign_program(  # program_ids_with_fios_id: list[SProgramIDWit
         # add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
         # select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
         # user_data: Annotated[User, Depends(get_current_techman_user)]
+        user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
 ) -> None:
     """Обновление передачи программ в работу оператору мастером (отмена распределения).
 

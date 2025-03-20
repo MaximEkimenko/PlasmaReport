@@ -1,7 +1,9 @@
 """Регистрация роутеров приложения."""
 from fastapi import FastAPI, APIRouter
 
+from auth.users import fastapi_users
 from auth.router import router as auth_router
+from auth.schemas import UserRead, UserUpdate
 from logist.router import router as logist_router
 from master.router import router as master_router
 from reports.router import router as reports_router
@@ -21,11 +23,16 @@ def register_routers(app: FastAPI) -> None:
             "message": "start page",
         }
 
-    # Подключение роутеров
     app.include_router(root_router, tags=["root"])
-    app.include_router(logist_router, prefix="/logist", tags=["logist"])
+    # аутентификация, авторизация
     app.include_router(auth_router, prefix="/auth", tags=["auth"])
+    # пользователи FastAPI Users
+    app.include_router(fastapi_users.get_users_router(UserRead, UserUpdate), prefix="/user", tags=["user"])
+
     app.include_router(techman_router, prefix="/techman", tags=["techman"])
     app.include_router(master_router, prefix="/master", tags=["master"])
     app.include_router(operator_router, prefix="/operator", tags=["operator"])
+    app.include_router(logist_router, prefix="/logist", tags=["logist"])
     app.include_router(reports_router, prefix="/reports", tags=["reports"])
+
+

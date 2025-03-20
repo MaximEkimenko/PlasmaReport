@@ -26,7 +26,7 @@ from settings.register_routers import register_routers
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[dict, None]:  # noqa ARG001
+async def lifespan(app: FastAPI) -> AsyncGenerator:  # noqa ARG001
     """Управление жизненным циклом приложения."""
     log.info("Инициализация приложения...")
     yield
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[dict, None]:  # noqa ARG001
 
 app = FastAPI(
     title="Приложение для учёта сменных заданий установок плазменной резки",
-    description="there is no description yet.",
+    description="description",
     version="0.0.1",
     lifespan=lifespan)
 

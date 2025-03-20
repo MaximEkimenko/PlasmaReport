@@ -10,8 +10,8 @@ from pydantic import Field, BaseModel
 class CommonPartData(BaseModel):
     """Общая схема для моделей данных детали sigma nest и PlasmaReport."""
 
-    CuttingLength: float = Field(description="Длина вырезки", example=12.22)
-    CuttingTimePart: Decimal = Field(description="Время вырезки", example=Decimal("10.2"))
+    CuttingLength: float = Field(description="Длина вырезки", examples=[12.22])
+    CuttingTimePart: Decimal = Field(description="Время вырезки", examples=[Decimal("10.2")])
     DueDate: datetime.datetime = Field(description="Дата готовности.",
                                        example=datetime.datetime.now(datetime.UTC))
     MasterPartQty: int = Field(description="Не определено", example=10)
