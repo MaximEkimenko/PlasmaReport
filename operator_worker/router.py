@@ -11,6 +11,7 @@ from logger_config import log
 from techman.enums import ProgramStatus
 from dependencies.dao_dep import get_session_with_commit, get_session_without_commit
 from operator_worker.schemas import SPartDoneByFio
+from settings.translate_dict import get_translated_keys
 
 router = APIRouter()
 
@@ -19,11 +20,14 @@ router = APIRouter()
 async def get_my_programs(fio_id: int,
                           select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
                           user_data: Annotated[User, Depends(get_operator_user)],  # noqa ARG001
-                          ) -> list:
+                          ) -> dict:
     """Получение всех программ, оператора."""
     program_select_table = ProgramDAO(session=select_session)
     allowed_statuses = (ProgramStatus.ACTIVE, ProgramStatus.ASSIGNED, ProgramStatus.CALCULATING)
-    return await program_select_table.get_program_by_fio_id_with_status(fio_id, statuses=allowed_statuses)
+    my_programs = await program_select_table.get_program_by_fio_id_with_status(fio_id, statuses=allowed_statuses)
+
+    headers = get_translated_keys(my_programs)
+    return {"data": my_programs, "headers": headers}
 
 
 @router.get("/start_program", tags=["operator"])

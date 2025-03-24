@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Query, Depends, APIRouter
+from fastapi import Depends, APIRouter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,7 @@ from logger_config import log
 from techman.enums import ProgramStatus
 from master.schemas import SFioDoer, SProgramIDWithFios
 from dependencies.dao_dep import get_session_with_commit, get_session_without_commit
+from settings.translate_dict import get_translated_keys
 
 router = APIRouter()
 
@@ -49,7 +50,7 @@ async def get_parts_by_program_id(program_id: int,
                                   select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
                                   user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
                                   fio_doer_id: int | None = None,
-                                  ) -> list[dict]:
+                                  ) -> dict:
     """Получение списка деталей программы по ее id. С опциональным параметром fio_doer_id.
 
     Пример ввода: `1`.
@@ -73,33 +74,34 @@ async def get_parts_by_program_id(program_id: int,
             if one_fio_doer.id in doer_ids:
                 part.update({"fio_doers": one_fio_doer.to_dict()})
 
-    return parts
+    headers = get_translated_keys(parts)
+    return {"data": parts, "headers": headers}
 
-
-@router.get("/get_parts_by_statuses", tags=["master", "logist"])
-async def get_parts_by_statuses(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                                user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
-                                include_program_statuses: Annotated[tuple[str, ...],
-                                Query()] = (ProgramStatus.CREATED,
-                                            ProgramStatus.UNASSIGNED,
-                                            ProgramStatus.ASSIGNED,
-                                            ProgramStatus.ACTIVE,
-                                            ),
-
-                                ) -> list[dict]:
-    """Получение программ по списку статусов.
-
-    include_program_statuses = список статусов программы, которые должны быть включены в выборку.
-    По молчанию =("создана",
-                "не распределена",
-               "распределена",
-               "в работе").
-    """
-    parts_select_table = PartDAO(session=select_session)
-    parts = await parts_select_table.get_joined_part_data_statuses(include_statuses=include_program_statuses)
-    if not parts:
-        raise EmptyAnswerError(detail="Нет деталей в данной выборке.")
-    return parts
+#
+# @router.get("/get_parts_by_statuses", tags=["master", "logist"])
+# async def get_parts_by_statuses(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+#                                 user_data: Annotated[User, Depends(get_master_user)],
+#                                 include_program_statuses: Annotated[tuple[str, ...],
+#                                 Query()] = (ProgramStatus.CREATED,
+#                                             ProgramStatus.UNASSIGNED,
+#                                             ProgramStatus.ASSIGNED,
+#                                             ProgramStatus.ACTIVE,
+#                                             ),
+#
+#                                 ) -> list[dict]:
+#     """Получение программ по списку статусов.
+#
+#     include_program_statuses = список статусов программы, которые должны быть включены в выборку.
+#     По молчанию =("создана",
+#                 "не распределена",
+#                "распределена",
+#                "в работе").
+#     """
+#     parts_select_table = PartDAO(session=select_session)
+#     parts = await parts_select_table.get_joined_part_data_statuses(include_statuses=include_program_statuses)
+#     if not parts:
+#         raise EmptyAnswerError(detail="Нет деталей в данной выборке.")
+#     return parts
 
 
 @router.post("/create_doer", tags=["master"])
@@ -161,8 +163,8 @@ async def get_programs_for_assignment_and_doers(
     if not doers:
         raise EmptyAnswerError(detail="Список операторов пуст.")
     doers = [fio_doer.to_dict() for fio_doer in doers]
-
-    return {"programs": programs_to_assign, "doers": doers}
+    headers = get_translated_keys(programs_to_assign)
+    return {"data": programs_to_assign, "doers": doers, "headers": headers}
 
 
 @router.post("/assign_program", tags=["master"])

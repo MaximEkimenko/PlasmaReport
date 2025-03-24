@@ -21,6 +21,7 @@ from techman.utils import normalize_value, create_data_to_db
 from techman.schemas import SWoData, SProgramData, SUpdateProgramData, SPartDataPlasmaReport
 from techman.constants import fields_to_compare
 from dependencies.dao_dep import get_session_with_commit, get_session_without_commit
+from settings.translate_dict import get_translated_keys
 from sigma_handlers.sigma_db import (
     get_wo_names,
     get_parts_by_wo,
@@ -85,7 +86,7 @@ async def get_programs(
                                         example="2025-02-28")],
         user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-) -> list[dict]:
+) -> dict:
     """Эндпоинт получения списка созданных программ из таблицы sigma Program.
 
     Этот эндпоинт принимает два параметра — `start_date` и `end_date`, которые определяют
@@ -111,7 +112,7 @@ async def get_programs(
     existing_program_names = [program_name["ProgramName"] for program_name in existing_programs]
     # присвоение статуса новым программа
     new_programs = [
-        {"program_status": ProgramStatus.NEW } | dict(program_name.items())
+        {"program_status": ProgramStatus.NEW} | dict(program_name.items())
         for program_name in sigma_programs
         if program_name["ProgramName"] not in existing_program_names
     ]
@@ -122,14 +123,16 @@ async def get_programs(
         for program_name in existing_programs
         if program_name["program_status"] in allowed_status
     ]
-    return new_programs + existing_programs
+    all_programs = new_programs + existing_programs
+    headers = get_translated_keys(all_programs)
+    return {"data": all_programs, "headers": headers}
 
 
 @router.post("/create_data", tags=["techman"])
 async def create_data(active_programs: list[dict],
                       add_session: Annotated[AsyncSession, Depends(get_session_with_commit)],
                       select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                      user_data: Annotated[User, Depends(get_techman_user)], # noqa ARG001
+                      user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
                       ) -> dict:
     """Заполнение БД PlasmaReport данными деталей в работе из sigma nest.
 

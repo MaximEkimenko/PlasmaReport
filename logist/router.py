@@ -15,6 +15,7 @@ from techman.enums import PartStatus, ProgramStatus
 from logist.schemas import SStorageCell, SProgramWithQty
 from master.schemas import SProgramsStatus
 from dependencies.dao_dep import get_session_with_commit, get_session_without_commit
+from settings.translate_dict import get_translated_keys
 
 router = APIRouter()
 
@@ -22,7 +23,7 @@ router = APIRouter()
 @router.get("/get_programs_for_calculation", tags=["logist"])
 async def get_programs_for_calculation(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
                                        user_data: Annotated[User, Depends(get_logist_user)],  # noqa ARG001
-                                       ) -> list[dict]:
+                                       ) -> dict:
     """Получение списка программ со статусом.
 
     ProgramStatus.CALCULATING, ProgramStatus.DONE = количество принимается, выполнена.
@@ -31,7 +32,6 @@ async def get_programs_for_calculation(select_session: Annotated[AsyncSession, D
     programs_select_table = ProgramDAO(session=select_session)
     programs_to_calculate = await programs_select_table.find_programs_by_statuses(
         [
-            # ProgramStatus.ASSIGNED,
             ProgramStatus.DONE,
             ProgramStatus.CALCULATING,
         ],
@@ -39,7 +39,8 @@ async def get_programs_for_calculation(select_session: Annotated[AsyncSession, D
     if not programs_to_calculate:
         raise EmptyAnswerError(detail="Нет программ для количественной приёмки.")
 
-    return programs_to_calculate
+    headers = get_translated_keys(programs_to_calculate)
+    return {"data": programs_to_calculate, "headers": headers}
 
 
 @router.post("/calculate_parts", tags=["logist"])
