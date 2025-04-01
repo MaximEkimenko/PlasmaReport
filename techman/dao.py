@@ -1,3 +1,4 @@
+# ruff: noqa
 """DAO сервиса techman."""
 
 from sqlalchemy import delete, insert, select, update
@@ -20,14 +21,26 @@ class ProgramDAO(BaseDAO[Program]):
     async def find_programs_by_statuses(self, names: list[ProgramStatus]) -> list[dict]:
         """Получение существующих программ по имени программы."""
         # TODO валидировать входящий список имён
-        query = select(self.model).where(self.model.program_status.in_(names))
+        query = (
+            select(self.model)
+            .options(
+                joinedload(Program.parts)
+                .joinedload(Part.wo_number)
+            )
+            .where(self.model.program_status.in_(names))
+        )
 
         # Выполнение запроса
         result = await self._session.execute(query)
 
         # Получение всех записей
-        programs = result.scalars().all()
-        return [program.to_dict() for program in programs]
+        programs = result.scalars().unique().all()
+
+        return [
+            program.to_dict()
+            | {"wo_numbers": list({part.wo_number.WONumber for part in program.parts if part.wo_number})}
+            | {"wo_data1": list({part.wo_number.WOData1 for part in program.parts if part.wo_number})}
+            for program in programs]
 
     async def insert_returning(self, values: list) -> dict:
         """Вставка данных с возвратом id новой записи и имени программы."""
@@ -151,27 +164,36 @@ class ProgramDAO(BaseDAO[Program]):
     async def get_all_with_doers(self, status_list: list | None = None) -> list:
         """Получение всех записей с fio_doer по фильтру схемы pydentic."""
         try:
-            query = (select(self.model)
-                     .options(selectinload(Program.fio_doers))
-                     .where(self.model.program_status.in_(status_list)))
+            query = (
+                select(self.model)
+                .options(selectinload(Program.fio_doers))
+                .options(
+                    joinedload(Program.parts)
+                    .joinedload(Part.wo_number)
+                )
+                .where(self.model.program_status.in_(status_list))
+            )
             result = await self._session.execute(query)
-            records = result.scalars().all()
+            records = result.scalars().unique().all()
         except SQLAlchemyError:
             log.error("Ошибка при поиске всех записей по статусам")
             raise
         else:
             log.info("Найдено {len_records} записей.", len_records=len(records))
 
-            return [program.to_dict() | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
-                    for program in records]
+            return [
+                program.to_dict()
+                | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
+                | {"wo_numbers": list({part.wo_number.WONumber for part in program.parts if part.wo_number})}
+                | {"wo_data1": list({part.wo_number.WOData1 for part in program.parts if part.wo_number})}
+                for program in records
+            ]
 
     async def get_program_by_fio_id_with_status(self, fio_doer_id: int, statuses: tuple[ProgramStatus, ...]) -> list:
         """Получение программ по фио исполнителя."""
         query = (
             select(self.model)
             .where(self.model.program_status.in_(statuses))
-            # .in_(wo_numbers)
-            # .WONumber.in_(wo_numbers)
             .join(self.model.fio_doers)
             .where(FioDoer.id == fio_doer_id)
             .options(joinedload(Program.fio_doers))
@@ -181,10 +203,11 @@ class ProgramDAO(BaseDAO[Program]):
 
         programs = result.unique().scalars().all()
         log.info(f"Найдено {len(programs)} программ исполнителя с id {fio_doer_id}.")
-        return [program.to_dict()
-                | {"fio_doer": [fio_doer.to_dict() for fio_doer in program.fio_doers if
-                                fio_doer.id == fio_doer_id][0]}
-                for program in programs]
+        return [
+            program.to_dict()
+            | {"fio_doer": [fio_doer.to_dict() for fio_doer in program.fio_doers if fio_doer.id == fio_doer_id][0]}
+            for program in programs
+        ]
 
     async def update_program_status(self, program_id: int, new_status: ProgramStatus) -> None:
         """Обновление статуса программы."""
@@ -326,3 +349,41 @@ class PartDAO(BaseDAO[Part]):
             log.info(f"Удалено {result.rowcount} записей.")
             await self._session.flush()
             return int(result.rowcount)
+
+    async def tst_get_all_data_from_parts(self) -> list[dict]:
+        """Получение всех записей из деталей."""
+        query = (
+            select(Program)
+            .options(
+                joinedload(Program.parts)
+                .joinedload(Part.wo_number)
+            )
+        )
+        # Выполнение запроса
+        result = await self._session.execute(query)
+        programs = result.scalars().unique().all()
+
+        # Преобразование данных в требуемый формат
+        output = [
+            {
+                "ProgramName": program.ProgramName,
+                "UsedArea": program.UsedArea,
+                "ScrapFraction": program.ScrapFraction,
+                "MachineName": program.MachineName,
+                "PostDateTime": program.PostDateTime,
+                "Material": program.Material,
+                "Thickness": program.Thickness,
+                "SheetLength": program.SheetLength,
+                "SheetWidth": program.SheetWidth,
+                "CuttingTimeProgram": program.CuttingTimeProgram,
+                "PierceQtyProgram": program.PierceQtyProgram,
+                "wo_numbers": list({part.wo_number.WONumber for part in program.parts if part.wo_number}),
+                "wo_data1": list({part.wo_number.WOData1 for part in program.parts if part.wo_number}),
+                "parts": [part.PartName for part in program.parts],
+            }
+            for program in programs
+        ]
+
+        # Вывод результата
+
+        return (output)

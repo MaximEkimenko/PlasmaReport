@@ -50,21 +50,20 @@ class Base(AsyncAttrs, DeclarativeBase):
     def to_dict(self) -> dict:
         """Преобразование модели в словарь."""
         columns = class_mapper(self.__class__).columns
-        return {column.key: getattr(self, column.key) for column in columns}
+        return {column.key: (round(getattr(self, column.key), 2) if isinstance(getattr(self, column.key), float)
+                             else getattr(self, column.key))
+                for column in columns}
 
-
-
-
-# def connection(method):
-#     async def wrapper(*args, **kwargs):
-#         async with async_session_maker() as session:
-#             try:
-#                 return await method(*args, **kwargs, session=session)
-#             except Exception as e:
-#                 await session.rollback()
-#                 log.error("Ошибка подключения к БД.")
-#                 log.exception(e)
-#             finally:
-#                 await session.close()
-#
-#     return wrapper
+        # def connection(method):
+    #     async def wrapper(*args, **kwargs):
+    #         async with async_session_maker() as session:
+    #             try:
+    #                 return await method(*args, **kwargs, session=session)
+    #             except Exception as e:
+    #                 await session.rollback()
+    #                 log.error("Ошибка подключения к БД.")
+    #                 log.exception(e)
+    #             finally:
+    #                 await session.close()
+    #
+    #     return wrapper

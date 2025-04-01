@@ -190,4 +190,3 @@ def create_placeholders_params_query(placeholders):
         WHERE  
             p.ProgramName IN ({placeholders});
         """
-# p.PartName,

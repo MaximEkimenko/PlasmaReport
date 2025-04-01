@@ -72,7 +72,7 @@ async def get_parts_by_program_id(program_id: int,
         for part in parts:
             doer_ids = [fio_doer["id"] for fio_doer in part["fio_doers"]]
             if one_fio_doer.id in doer_ids:
-                part.update({"fio_doers": one_fio_doer.to_dict()})
+                part.update({"fio_doer": one_fio_doer.to_dict()})
 
     headers = get_translated_keys(parts)
     return {"data": parts, "headers": headers}
@@ -251,3 +251,11 @@ async def update_assign_program(  # program_ids_with_fios_id: list[SProgramIDWit
     # TODO после реализации основного процесса
     """
     return ServerNotImplementedError
+
+
+@router.get("/tst")
+async def tst_query(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)]) -> dict:
+    """Тестовый запрос."""
+    parts_select_table = PartDAO(session=select_session)
+    result = await parts_select_table.tst_get_all_data_from_parts()
+    return {"data": result}

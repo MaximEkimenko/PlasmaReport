@@ -47,6 +47,7 @@ class ReportPartDAO(BaseDAO):
                 **(part.wo_number.to_dict()),  # Данные заказа
                 **(part.storage_cell.to_dict() if part.storage_cell else {}),  # Данные мест хранения
                 **part.to_dict(),  # Данные детали
+
             }
 
             if part.program:
@@ -54,6 +55,7 @@ class ReportPartDAO(BaseDAO):
                     fio_doer.to_dict()
                     for fio_doer in part.program.fio_doers
                 ]
+                combined_data["done_by_fio_doer"] = part.done_by_fio_doer.to_dict() if part.done_by_fio_doer else None
             else:
                 combined_data["fio_doers"] = []
 
