@@ -7,6 +7,7 @@ from sigma_handlers.sql_queries import (
     work_orders_query,
     programs_name_query,
     parts_by_program_query,
+    single_date_programs_name_query,
 )
 
 
@@ -15,6 +16,15 @@ async def get_program_names(start_date: date, end_date: date) -> list[dict]:
     functions_params = (
         programs_name_query,
         (start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")),
+    )
+    return await make_async_sigma_request(get_any_sigma_data, functions_params)
+
+
+async def single_date_get_program_names(start_date: date) -> list[dict]:
+    """Получение списка созданных программ sigma nest программ."""
+    functions_params = (
+        single_date_programs_name_query,
+        (start_date.strftime("%Y-%m-%d")),
     )
     return await make_async_sigma_request(get_any_sigma_data, functions_params)
 

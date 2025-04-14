@@ -12,7 +12,13 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.users import get_techman_user
-from exceptions import InvalidSigmaData, AlchemyDatabaseError, WrongProgramStatusError, ExistingDatabaseEntityError
+from exceptions import (
+    EmptyAnswerError,
+    InvalidSigmaData,
+    AlchemyDatabaseError,
+    WrongProgramStatusError,
+    ExistingDatabaseEntityError,
+)
 from auth.models import User
 from techman.dao import WoDAO, PartDAO, ProgramDAO
 from logger_config import log
@@ -27,6 +33,7 @@ from sigma_handlers.sigma_db import (
     get_parts_by_wo,
     get_program_names,
     get_parts_by_program,
+    single_date_get_program_names,
 )
 
 router = APIRouter()
@@ -103,7 +110,13 @@ async def get_programs(
     """
     programs_table = ProgramDAO(session=select_session)
     # программы с sigma за период
-    sigma_programs = await get_program_names(start_date, end_date)
+    if start_date == end_date:
+        sigma_programs = await single_date_get_program_names(start_date)
+    else:
+        sigma_programs = await get_program_names(start_date, end_date)
+    if not sigma_programs:
+        msg = "Программы не найдены."
+        raise EmptyAnswerError(msg)
     # имена программ sigma
     sigma_program_names = [program_name["ProgramName"] for program_name in sigma_programs]
     # существующие программы в БД

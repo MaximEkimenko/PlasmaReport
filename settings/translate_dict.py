@@ -95,5 +95,9 @@ def translate_keys(list_of_dicts_to_translate: list) -> list:
 
 def get_translated_keys(input_list: list) -> dict:
     """Получение переведённых ключей из списка словарей."""
-    input_dict = input_list[0]
+    try:
+        input_dict = input_list[0]
+    except Exception:
+        return None
+
     return {key: translate_dict[key] for key, value in input_dict.items() if key in translate_dict}
