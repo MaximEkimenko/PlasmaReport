@@ -11,6 +11,7 @@ from logger_config import log
 from techman.enums import ProgramStatus
 from master.schemas import SProgramIDWithFios
 from techman.models import WO, Part, FioDoer, Program, ProgramFioDoerAssociation
+from utils.pics_utils.copy_pics_and_get_links import get_part_image, get_program_image
 
 
 class ProgramDAO(BaseDAO[Program]):
@@ -40,6 +41,7 @@ class ProgramDAO(BaseDAO[Program]):
             program.to_dict()
             | {"wo_numbers": list({part.wo_number.WONumber for part in program.parts if part.wo_number})}
             | {"wo_data1": list({part.wo_number.WOData1 for part in program.parts if part.wo_number})}
+            | {"program_pic": await get_program_image(program.ProgramName)}
             for program in programs]
 
     async def insert_returning(self, values: list) -> dict:
@@ -53,7 +55,15 @@ class ProgramDAO(BaseDAO[Program]):
     async def find_programs_by_names(self, names: list[str]) -> list[dict]:
         """Получение существующих программ по имени программы."""
         # TODO валидировать входящий список имён
-        query = select(self.model).options(selectinload(Program.fio_doers)).where(self.model.ProgramName.in_(names))
+        # query = select(self.model).options(selectinload(Program.fio_doers)).where(self.model.ProgramName.in_(names))
+        query = (
+            select(self.model)
+            .options(
+                selectinload(self.model.parts).selectinload(Part.wo_number)
+            )
+            .options(selectinload(self.model.fio_doers))  # Загружаем исполнителей
+            .where(self.model.ProgramName.in_(names))
+        )
 
         # Выполнение запроса
         result = await self._session.execute(query)
@@ -61,7 +71,9 @@ class ProgramDAO(BaseDAO[Program]):
         # Получение всех записей
         programs = result.scalars().all()
 
-        return [program.to_dict() | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
+        return [program.to_dict()
+                | {"WONumber": list({part.wo_number.WONumber for part in program.parts if part.wo_number})}
+                | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
                 for program in programs]
 
     async def find_programs_by_ids(self, ids: list[int]) -> list[dict]:
@@ -186,6 +198,7 @@ class ProgramDAO(BaseDAO[Program]):
                 | {"fio_doers": [doer.to_dict() for doer in program.fio_doers]}
                 | {"wo_numbers": list({part.wo_number.WONumber for part in program.parts if part.wo_number})}
                 | {"wo_data1": list({part.wo_number.WOData1 for part in program.parts if part.wo_number})}
+                | {"program_pic": await get_program_image(program.ProgramName)}
                 for program in records
             ]
 
@@ -206,6 +219,7 @@ class ProgramDAO(BaseDAO[Program]):
         return [
             program.to_dict()
             | {"fio_doer": [fio_doer.to_dict() for fio_doer in program.fio_doers if fio_doer.id == fio_doer_id][0]}
+            | {"program_pic": await get_program_image(program.ProgramName)}
             for program in programs
         ]
 
@@ -280,13 +294,18 @@ class PartDAO(BaseDAO[Part]):
         output = []
 
         for part in parts:
-            combined_data = {
-                **(part.program.to_dict() if part.program else {}),  # данные программы
-                **(part.wo_number.to_dict() if part.wo_number else {}),  # данные заказа
-                **(part.storage_cell.to_dict() if part.storage_cell else {}),  # ячейки хранения
-                "fio_doers": [doer.to_dict() for doer in part.program.fio_doers],  # данные исполнителей
-                **part.to_dict(),  # Данные детали
-            }
+            combined_data = (
+                    {
+                        **(part.program.to_dict() if part.program else {}),  # данные программы
+                        **(part.wo_number.to_dict() if part.wo_number else {}),  # данные заказа
+                        **(part.storage_cell.to_dict() if part.storage_cell else {}),  # ячейки хранения
+                        "fio_doers": [doer.to_dict() for doer in part.program.fio_doers],  # данные исполнителей
+                        **part.to_dict(),  # Данные детали
+                    }
+                    | {"program_pic": await get_program_image(part.program.ProgramName)}
+                    | {"part_pic": await get_part_image(part.PartName)}
+            )
+
             output.append(combined_data)
 
         return output

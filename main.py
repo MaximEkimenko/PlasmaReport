@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import BASEDIR
+from middlewares import CacheControlMiddleware
 from logger_config import log
 from admin_panel.admin import create_admin_panel
 from settings.register_routers import register_routers
@@ -17,12 +18,9 @@ from settings.register_routers import register_routers
 # TODO
 #  переписать to_dict получение данных на to_dict схем pydantic, использовать to_dict в Base только для моделей
 #  без join
-#  аутентификация авторизация средствами FastAPI
-#  словарь перевода полей для отчёта и выгрузок
 #  cmd (bash) script по развёртке на приложения на клиенте
 #  запуск с ярлыка на 0.0.0.0 (совместно с FRONT?) лучше запускать на том же сервере, что и sigma
 #  изучить, добавить в knowledgebase FastAPI-cash FastAPI-profiler добавить в проект при необходимости.
-#  добавить ссылки на картинки программ
 
 
 @asynccontextmanager
@@ -58,7 +56,7 @@ origins = [
     "http://192.168.8.168:5173",
 ]
 
-# Добавляем CORS Middleware
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,  # Разрешённые домены
@@ -66,6 +64,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Разрешённые HTTP-методы
     allow_headers=["*"],
 )
+# cash
+app.add_middleware(CacheControlMiddleware)
 
 static_path = BASEDIR / Path("static")
 app.mount(

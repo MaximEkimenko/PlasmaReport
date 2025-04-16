@@ -3,16 +3,14 @@ import zipfile
 
 from pathlib import Path
 
+from logger_config import log
+
 
 def extract_images_from_ods(ods_file_path: Path, output_dir: Path) -> None:
     """Получение картинки из ODS файла."""
-    # Проверяем, существует ли файл ODS
     if not ods_file_path.exists():
-        print(f"Файл {ods_file_path} не найден.") # noqa
+        log.debug("Файл {ods_file_path} не найден.", od_file_path=ods_file_path)
         return
-
-    # Создаем директорию для извлеченных изображений, если её нет
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         # Открываем ODS как ZIP-архив
@@ -22,21 +20,17 @@ def extract_images_from_ods(ods_file_path: Path, output_dir: Path) -> None:
             for file_name in ods_zip.namelist():
                 # Проверяем, является ли файл изображением
                 if any(file_name.lower().endswith(ext) for ext in image_extensions):
-                    # Извлекаем файл в указанную директорию
-                    extracted_path = output_dir / Path(file_name).name
-                    with extracted_path.open("wb") as image_file:
+                    with output_dir.open("wb") as image_file:
                         image_file.write(ods_zip.read(file_name))
-                    print(f"Изображение успешно извлечено: {extracted_path}") # noqa
-    except zipfile.BadZipFile:
-        print(f"Ошибка: {ods_file_path} не является корректным ODS файлом.") # noqa
+                    log.debug("Изображение извлечено: {extracted_path}", extracted_path=output_dir)
+                    break
+    except zipfile.BadZipFile as e:
+        log.error("Ошибка: {ods_file_path} не является корректным ODS файлом.", ods_file_path=ods_file_path)
+        log.exception(e)
 
-
-
-# Пример использования
 
 if __name__ == "__main__":
     # ods_file_path = Path(r'D:\projects\PlasmaReport\misc\GS- 22-137856.ODS')  # Путь к вашему ODS файлу
-    ods_file_path = Path(r"D:\projects\PlasmaReport\misc\GS- 22-137851.ODS")  # Путь к вашему ODS файлу
+    ods_file_path = Path(r"D:\projects\PlasmaReport\misc\GS- 22-137855.ODS")  # Путь к вашему ODS файлу
     output_dir = Path(r"D:\projects\PlasmaReport\misc\images")  # Директория для сохранения изображений
     extract_images_from_ods(ods_file_path, output_dir)
-

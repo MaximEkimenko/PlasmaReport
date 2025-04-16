@@ -61,6 +61,8 @@ class Program(Base):
     # время окончания работы программы
     time_program_finished: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)
 
+    # TODO добавить поле для хранения ссылки на полученную из ods картинку программы ?
+
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
     program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED, index=True)
     program_priority: Mapped[ProgramPriority] = mapped_column(default=ProgramPriority.LOW,
@@ -153,6 +155,7 @@ class Part(Base):
     RevisionNumber: Mapped[str]  # RevisionNumber
     PK_PIP: Mapped[str]  # PK_PIP
     Thickness: Mapped[float]  # Thickness
+    # TODO добавить поле для хранения ссылки на скопированную картинку детали ?
 
     part_status: Mapped[PartStatus] = mapped_column(default=PartStatus.UNASSIGNED, index=True)
     # фактически изготовленное количество деталей

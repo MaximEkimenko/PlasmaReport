@@ -43,7 +43,7 @@ translate_dict = {
     "cell_name": "Ячейка хранения",
     "done_by_fio_doer_id": "done_by_fio_doer_id",
     "PartName": "Деталь",
-    "QtyInProcess": "Количество в программе",
+    "QtyInProcess": "Количество в работе",
     "PartLength": "Длина детали",
     "PartWidth": "Ширина детали",
     "TrueArea": "Истинная площадь",
@@ -74,6 +74,10 @@ translate_dict = {
     "wo_data1": "Доп. инфо заказов",
     "fio_doer": "Исполнитель",
     "done_by_fio_doer": "Исполнитель",
+    "Data1": "Доп. инфо заказа",
+    "Priority": "Приоритет",
+    "program_pic": "Изображение программы",
+    "part_pic": "Изображение детали",
 }
 
 

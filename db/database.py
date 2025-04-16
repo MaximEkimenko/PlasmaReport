@@ -50,7 +50,7 @@ class Base(AsyncAttrs, DeclarativeBase):
     def to_dict(self) -> dict:
         """Преобразование модели в словарь."""
         columns = class_mapper(self.__class__).columns
-        return {column.key: (round(getattr(self, column.key), 2) if isinstance(getattr(self, column.key), float)
+        return {column.key: (round(getattr(self, column.key), 1) if isinstance(getattr(self, column.key), float)
                              else getattr(self, column.key))
                 for column in columns}
 

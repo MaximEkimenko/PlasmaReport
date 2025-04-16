@@ -4,7 +4,7 @@
 #  найти решение по возможности назначения USER нескольких ролей с соответствующим  доступом
 import datetime
 
-from typing import Any, Annotated
+from typing import Annotated
 from datetime import date
 
 from fastapi import Query, Depends, APIRouter
@@ -35,6 +35,7 @@ from sigma_handlers.sigma_db import (
     get_parts_by_program,
     single_date_get_program_names,
 )
+from utils.pics_utils.copy_pics_and_get_links import get_part_image, get_program_image
 
 router = APIRouter()
 
@@ -45,7 +46,7 @@ async def get_wos(start_date: Annotated[date, Query(..., description="Начал
                   end_date: Annotated[date, Query(..., description="Конечная дата создания",
                                                   example="2025-02-28")],
                   user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
-                  ) -> list[dict]:
+                  ) -> dict:
     """Эндпоинт получения списка активных заказов из таблицы sigma WO.
 
     Этот эндпоинт принимает два параметра — `start_date` и `end_date`, которые определяют
@@ -62,27 +63,38 @@ async def get_wos(start_date: Annotated[date, Query(..., description="Начал
       GET /orders?start_date=2025-01-09&end_date=2025-01-09
       ```
     """
-    return await get_wo_names(start_date, end_date)
+    data = await get_wo_names(start_date, end_date)
+    headers = get_translated_keys(data)
+    return {"data": data, "headers": headers}
 
 
 @router.get("/get_order_parts/{wo_number}", tags=["techman", "sigma"],
             response_model=list[dict[str, str | datetime.datetime]])
 async def get_wo_parts(wo_number: str,
                        user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
-                       ) -> list[dict[str, Any]]:
+                       ) -> dict:
     """Эндпоинт получения данных по конкретному `wo_number` заказу из таблицы sigma WO."""
-    return await get_parts_by_wo(wo_number)
+    data = await get_parts_by_wo(wo_number)
+    headers = get_translated_keys(data)
+    return {"data": data, "headers": headers}
 
 
 @router.get("/get_program_parts/{program_name}", tags=["techman", "sigma"])
 async def get_program_parts(program_name: str,
                             user_data: Annotated[User, Depends(get_techman_user)],  # noqa ARG001
-                            ) -> list[dict[str, Any]]:
+                            ) -> dict:
     """Эндпоинт получения данных по конкретной `program_name` программе из таблицы sigma Program.
 
     Пример: `SP SS- 1-142724`.
     """
-    return await get_parts_by_program(program_name)
+    data = await get_parts_by_program(program_name)
+
+    for line in data:
+        line["part_pic"] = await get_part_image(line["PartName"])
+        line["program_pic"] = await get_program_image(program_name)
+
+    headers = get_translated_keys(data)
+    return {"data": data, "headers": headers, "program_pic": data[0]["program_pic"]}
 
 
 @router.get("/get_programs", tags=["techman"])
@@ -124,8 +136,18 @@ async def get_programs(
     # имена существующих программ в БД
     existing_program_names = [program_name["ProgramName"] for program_name in existing_programs]
     # присвоение статуса новым программа
+
+    # TODO получение картинок программ
+    all_program_names = sigma_program_names + existing_program_names
+
+    # первичное создание картинок программ
+    for program_name in all_program_names:
+        await get_program_image(program_name)
+
     new_programs = [
-        {"program_status": ProgramStatus.NEW} | dict(program_name.items())
+        {"program_status": ProgramStatus.NEW}
+        | dict(program_name.items())
+        | {"program_pic": await get_program_image(program_name["ProgramName"])}
         for program_name in sigma_programs
         if program_name["ProgramName"] not in existing_program_names
     ]
@@ -133,10 +155,13 @@ async def get_programs(
     allowed_status = (ProgramStatus.UNASSIGNED, ProgramStatus.CREATED, ProgramStatus.ASSIGNED, ProgramStatus.ACTIVE)
     existing_programs = [
         dict(program_name.items())
+        | {"program_pic": await get_program_image(program_name["ProgramName"])}
         for program_name in existing_programs
         if program_name["program_status"] in allowed_status
     ]
+
     all_programs = new_programs + existing_programs
+
     headers = get_translated_keys(all_programs)
     return {"data": all_programs, "headers": headers}
 

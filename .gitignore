@@ -9,3 +9,4 @@ tst_in_plasma_report.py
 statistics.txt
 plasma_report.db
 logs
+static

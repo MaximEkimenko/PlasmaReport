@@ -75,7 +75,8 @@ async def get_parts_by_program_id(program_id: int,
                 part.update({"fio_doer": one_fio_doer.to_dict()})
 
     headers = get_translated_keys(parts)
-    return {"data": parts, "headers": headers}
+    return {"data": parts, "headers": headers, "program_pic": parts[0]["program_pic"]}
+
 
 #
 # @router.get("/get_parts_by_statuses", tags=["master", "logist"])

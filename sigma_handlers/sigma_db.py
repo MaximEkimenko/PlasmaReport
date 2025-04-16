@@ -7,6 +7,7 @@ from sigma_handlers.sql_queries import (
     work_orders_query,
     programs_name_query,
     parts_by_program_query,
+    parts_with_sigma_qty_query,
     single_date_programs_name_query,
 )
 
@@ -47,22 +48,28 @@ async def get_parts_by_program(program_name: str) -> list[dict]:
     return await make_async_sigma_request(get_any_sigma_data, function_params)
 
 
-async def get_parts_by_wo(wo_name: str) -> list[dict]:
+async def get_parts_by_wo(wo_number: str) -> list[dict]:
     """Получение деталей заказа."""
     function_params = (
         parts_by_wo_query,
-        (wo_name,),
+        (wo_number,),
     )
     return await make_async_sigma_request(get_any_sigma_data, function_params)
 
 
 async def get_parts_data_by_programs(programs: list[str]) -> list[dict]:
     """Получение полной информации с деталями по списку программ."""
-    return await make_async_sigma_request(get_full_parts_data_sql, (programs, ))
+    return await make_async_sigma_request(get_full_parts_data_sql, (programs,))
+
+
+async def get_parts_info_by_wo(wo_number: str) -> list[dict]:
+    """Получение полной информации с деталями по заказу (Количество в работе, количество готово.)."""
+    function_params = (
+        parts_with_sigma_qty_query,
+        (wo_number,),
+    )
+    return await make_async_sigma_request(get_any_sigma_data, function_params)
 
 
 if __name__ == "__main__":
-
     pass
-
-

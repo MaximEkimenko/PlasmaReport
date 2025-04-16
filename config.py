@@ -28,4 +28,6 @@ class Settings(BaseSettings):
 settings = Settings()
 db_url = settings.db_url
 BASEDIR = settings.BASE_DIR
-
+PARTS_DIR = Path(r"M:\Xranenie\Sigma\Parts")
+REPORTS_DIR = Path(r"M:\Xranenie\Sigma\eReports")
+STATIC_IMAGES_DIR = BASEDIR / "static" / "images"

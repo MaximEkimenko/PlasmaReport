@@ -69,7 +69,8 @@ ignore = [
    # TODO FastAPI seprcials
    "N805",     # First argument of a method should be named `self`
    "TRY301",
-   "RUF015"
+   "RUF015",
+   "S101"
 ]
 
 [lint.flake8-quotes]

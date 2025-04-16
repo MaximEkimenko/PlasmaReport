@@ -9,6 +9,7 @@ from exceptions import EmptyAnswerError
 from reports.dao import ReportPartDAO
 from dependencies.dao_dep import get_session_without_commit
 from settings.translate_dict import get_translated_keys
+from sigma_handlers.sigma_db import get_parts_info_by_wo
 
 router = APIRouter()
 
@@ -29,4 +30,19 @@ async def get_full_parts_report(
 
     headers = get_translated_keys(parts)
 
+    return {"data": parts, "headers": headers}
+
+
+@router.get("/get_wo_details", tags=["reports"])
+async def get_wo_details(wo_number: str,
+                         # user_data: Annotated[User, Depends(get_techman_user)
+                         ) -> dict:
+    """Получение деталей заказа.
+
+    На вход подаётся строка имени заказа (wo_number).
+    Пример ввода:
+    ```1277 890WH-2G-GOF```
+    """
+    parts = await get_parts_info_by_wo(wo_number)
+    headers = get_translated_keys(parts)
     return {"data": parts, "headers": headers}
