@@ -1,5 +1,5 @@
-# ruff: noqa
-from typing import Any
+"""Тесты для copy_pics_and_get_links.py."""
+# ruff: noqa: TRY002, ARG001
 from pathlib import Path
 
 import pytest
@@ -9,7 +9,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from utils.pics_utils.copy_pics_and_get_links import get_part_image, get_program_image
 
 # Настройка pytest для асинхронных тестов
-pytestmark: pytest.MarkDecorator = pytest.mark.asyncio
+pytestmark: pytest.MarkDecorator = pytest.mark.asyncio(loop_scope="session")
 
 
 # Фикстуры для путей
@@ -87,8 +87,9 @@ async def test_get_part_image_copy_error(mock_config: None, mock_config_paths: d
     source_path.touch()
 
     # Мокируем shutil.copy2 для имитации ошибки
-    def raise_error(*args: Any, **kwargs: Any) -> None:
-        raise Exception("Copy error")
+    def raise_error() -> None:
+        msg = "Copy error"
+        raise Exception(msg)
 
     monkeypatch.setattr("shutil.copy2", raise_error)
 
@@ -150,8 +151,9 @@ async def test_get_program_image_extract_error(mock_config: None, mock_config_pa
     ods_path.touch()
 
     # Мокируем extract_images_from_ods для имитации ошибки
-    def raise_error(*args: Any, **kwargs: Any) -> None:
-        raise Exception("Extract error")
+    def raise_error() -> None:
+        msg = "Extract error"
+        raise Exception(msg)
 
     monkeypatch.setattr("utils.pics_utils.copy_pics_and_get_links.extract_images_from_ods", raise_error)
 

@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Depends, APIRouter
+from fastapi import Query, Depends, APIRouter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,40 +27,24 @@ from settings.translate_dict import get_translated_keys
 router = APIRouter()
 
 
-# @router.get("/get_programs_for_assignment", tags=["master"])
-# async def get_programs_for_assignment(select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-#                                       # user_data: Annotated[User, Depends(get_current_techman_user)]
-#                                       ) -> list[dict]:
-#     """Получение списка программ со статусом CREATED (создана).
-#
-#     Для последующей передачи в работу и назначения исполнителя мастером.
-#     """
-#     programs_select_table = ProgramDAO(session=select_session)
-#     result = await programs_select_table.get_all_with_doers(filter_dict={"program_status": ProgramStatus.ASSIGNED})
-#     # programs_to_assign = [program.to_dict() | {"fio_doers": list(program.fio_doers)} for program in result]
-#     # print(programs_to_assign)
-#     if not result:
-#         raise EmptyAnswerError(detail="Нет программ для передачи в работу.")
-#
-#     return result
-
-
 @router.get("/get_parts_by_program_id", tags=["master", "logist"])
-async def get_parts_by_program_id(program_id: int,
-                                  select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
-                                  user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
-                                  fio_doer_id: int | None = None,
-                                  ) -> dict:
-    """Получение списка деталей программы по ее id. С опциональным параметром fio_doer_id.
+async def get_parts_by_program_id(
+        program_id: Annotated[list[int], Query(...)],
+        select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+        user_data: Annotated[User, Depends(get_master_user)],  # noqa ARG001
+        fio_doer_id: int | None = None,
+) -> dict:
+    """Получение списка деталей программы по списку id программ. С опциональным параметром fio_doer_id.
 
-    Пример ввода: `1`.
+    Пример ввода: [1, 2, 3].
 
     При передаче id исполнителя (fio_doer_id), который участвовал в программе, список fio_doers будет
     преобразован в словарь только с этим исполнителем. Если fio_doer_id не распределён в программе,
     то список останется бех изменений.
     """
     parts_select_table = PartDAO(session=select_session)
-    parts = await parts_select_table.get_joined_part_data_by_programs_ids_list([program_id])
+    parts = await parts_select_table.get_joined_part_data_by_programs_ids_list(program_id)
+
     if not parts:
         raise EmptyAnswerError(detail="Нет деталей для данной программы.")
 
@@ -76,6 +60,40 @@ async def get_parts_by_program_id(program_id: int,
 
     headers = get_translated_keys(parts)
     return {"data": parts, "headers": headers, "program_pic": parts[0]["program_pic"]}
+
+
+# @router.get("/get_parts_by_list_program_id", tags=["master", "logist"])
+# async def get_parts_by_list_program_id(
+#         program_ids: Annotated[list[int], Query(..., description="список id программ", )],
+#         select_session: Annotated[AsyncSession, Depends(get_session_without_commit)],
+#         user_data: Annotated[User, Depends(get_master_user)],
+#         fio_doer_id: int | None = None,
+# ) -> dict:
+#     """Получение списка деталей программы по ее id. С опциональным параметром fio_doer_id.
+#
+#     Пример ввода: `1`.
+#
+#     При передаче id исполнителя (fio_doer_id), который участвовал в программе, список fio_doers будет
+#     преобразован в словарь только с этим исполнителем. Если fio_doer_id не распределён в программе,
+#     то список останется бех изменений.
+#     """
+#     parts_select_table = PartDAO(session=select_session)
+#     parts = await parts_select_table.get_joined_part_data_by_programs_ids_list(program_ids)
+#     if not parts:
+#         raise EmptyAnswerError(detail="Нет деталей для данной программы.")
+#
+#     fio_doer_select_table = FioDoerDAO(session=select_session)
+#     one_fio_doer = await fio_doer_select_table.find_one_or_none_by_id(fio_doer_id)
+#
+#     # фильтрация по исполнителю программы
+#     if fio_doer_id:
+#         for part in parts:
+#             doer_ids = [fio_doer["id"] for fio_doer in part["fio_doers"]]
+#             if one_fio_doer.id in doer_ids:
+#                 part.update({"fio_doer": one_fio_doer.to_dict()})
+#
+#     headers = get_translated_keys(parts)
+#     return {"data": parts, "headers": headers, "program_pic": parts[0]["program_pic"]}
 
 
 #
