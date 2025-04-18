@@ -296,7 +296,7 @@ class PartDAO(BaseDAO[Part]):
         for part in parts:
             combined_data = (
                     {
-                        **(part.program.to_dict() if part.program else {}),  # данные программы
+                        # **(part.program.to_dict() if part.program else {}),  # данные программы
                         **(part.wo_number.to_dict() if part.wo_number else {}),  # данные заказа
                         **(part.storage_cell.to_dict() if part.storage_cell else {}),  # ячейки хранения
                         "fio_doers": [doer.to_dict() for doer in part.program.fio_doers],  # данные исполнителей

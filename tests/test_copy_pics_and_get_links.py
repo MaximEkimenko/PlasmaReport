@@ -32,7 +32,7 @@ def mock_config_paths(tmp_path: Path) -> dict[str, Path]:
 
 
 # Фикстура для мокирования config
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_config(mock_config_paths: dict[str, Path], monkeypatch: MonkeyPatch) -> None:
     """Мокирует пути в config."""
     monkeypatch.setattr("utils.pics_utils.copy_pics_and_get_links.PARTS_DIR", mock_config_paths["PARTS_DIR"])
@@ -42,7 +42,7 @@ def mock_config(mock_config_paths: dict[str, Path], monkeypatch: MonkeyPatch) ->
 
 
 # Тесты для get_part_image
-async def test_get_part_image_success(mock_config: None, mock_config_paths: dict[str, Path]) -> None:
+async def test_get_part_image_success(mock_config_paths: dict[str, Path]) -> None:
     """Тестирует успешное копирование BMP-файла."""
     part_name: str = "test_part"
     source_path: Path = mock_config_paths["PARTS_DIR"] / f"{part_name}.bmp"
@@ -57,7 +57,7 @@ async def test_get_part_image_success(mock_config: None, mock_config_paths: dict
     assert dest_path.exists()
 
 
-async def test_get_part_image_already_exists(mock_config: None, mock_config_paths: dict[str, Path]) -> None:
+async def test_get_part_image_already_exists(mock_config_paths: dict[str, Path]) -> None:
     """Тестирует возврат URL, если BMP уже существует."""
     part_name: str = "test_part"
     dest_path: Path = mock_config_paths["STATIC_IMAGES_DIR"] / f"{part_name}.bmp"
@@ -69,7 +69,7 @@ async def test_get_part_image_already_exists(mock_config: None, mock_config_path
     assert result == f"/static/images/{part_name}.bmp"
 
 
-async def test_get_part_image_source_not_found(mock_config: None, mock_config_paths: dict[str, Path]) -> None:
+async def test_get_part_image_source_not_found(mock_config_paths: dict[str, Path]) -> None:
     """Тестирует случай, когда исходный BMP не существует."""
     part_name: str = "test_part"
 
@@ -78,7 +78,7 @@ async def test_get_part_image_source_not_found(mock_config: None, mock_config_pa
     assert result is None
 
 
-async def test_get_part_image_copy_error(mock_config: None, mock_config_paths: dict[str, Path],
+async def test_get_part_image_copy_error(mock_config_paths: dict[str, Path],
                                          monkeypatch: MonkeyPatch) -> None:
     """Тестирует ошибку при копировании BMP."""
     part_name: str = "test_part"
@@ -99,7 +99,7 @@ async def test_get_part_image_copy_error(mock_config: None, mock_config_paths: d
 
 
 # Тесты для get_program_image
-async def test_get_program_image_success(mock_config: None, mock_config_paths: dict[str, Path],
+async def test_get_program_image_success(mock_config_paths: dict[str, Path],
                                          monkeypatch: MonkeyPatch) -> None:
     """Тестирует успешное извлечение PNG из ODS."""
     program_name: str = "test_program"
@@ -121,7 +121,7 @@ async def test_get_program_image_success(mock_config: None, mock_config_paths: d
     assert dest_path.exists()
 
 
-async def test_get_program_image_already_exists(mock_config: None, mock_config_paths: dict[str, Path]) -> None:
+async def test_get_program_image_already_exists(mock_config_paths: dict[str, Path]) -> None:
     """Тестирует возврат URL, если PNG уже существует."""
     program_name: str = "test_program"
     dest_path: Path = mock_config_paths["STATIC_IMAGES_DIR"] / f"{program_name}.png"
@@ -133,7 +133,7 @@ async def test_get_program_image_already_exists(mock_config: None, mock_config_p
     assert result == f"/static/images/{program_name}.png"
 
 
-async def test_get_program_image_ods_not_found(mock_config: None, mock_config_paths: dict[str, Path]) -> None:
+async def test_get_program_image_ods_not_found(mock_config_paths: dict[str, Path]) -> None:
     """Тестирует случай, когда ODS-файл не существует."""
     program_name: str = "test_program"
 
@@ -142,7 +142,7 @@ async def test_get_program_image_ods_not_found(mock_config: None, mock_config_pa
     assert result is None
 
 
-async def test_get_program_image_extract_error(mock_config: None, mock_config_paths: dict[str, Path],
+async def test_get_program_image_extract_error(mock_config_paths: dict[str, Path],
                                                monkeypatch: MonkeyPatch) -> None:
     """Тестирует ошибку при извлечении PNG."""
     program_name: str = "test_program"
