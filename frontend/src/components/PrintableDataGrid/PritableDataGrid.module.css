@@ -1,0 +1,70 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.MuiDataGrid-footerContainer {
+    display: none;
+}
+.MuiDataGrid-root {
+    border: none !important;
+    font-size: 11px;
+}
+
+.MuiDataGrid-cell {
+    padding: 4px;
+    color: black;
+    font-size: 10px;
+}
+
+
+/* .print-container {
+    display: none; 
+} */
+
+
+@media print {
+
+
+    body {
+        width: 100vh !important;
+        margin: 0;
+    }
+    table {
+        color: black;
+    }
+    thead {
+        background-color: #e0e0e0;
+    }
+    th {
+        border: 1px solid #aaa;
+    }
+
+    td {
+        padding: 4px;
+
+        border: 1 solid orange !important;
+    }
+    .image_cell {
+        min-width: 115px;
+    }
+
+    @page{
+        margin: 10mm;
+    }
+
+     .print-container {
+        display:block;
+        width: 1350px; 
+        /* margin: 5px;  */
+        /* padding: 50px; */
+        box-sizing: border-box;
+    }
+
+    .print-table {  
+        border:none;      
+        width: 1300px; 
+        height: auto;
+        box-sizing: border-box;
+    } 
+}

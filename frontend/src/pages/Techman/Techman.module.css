@@ -1,0 +1,20 @@
+:root{
+--one: #FF4D4F;
+--two: #FA8C16;
+--three:#e9b712;
+--four: #52C41A;
+
+--one1: #d8333b;
+--two2: #D46B08;
+--three3:#D4B106;
+--four4: #389E0D;
+
+
+}
+
+.flex_container {
+    margin: 6px;;
+    display:flex;
+    justify-content: space-between;
+    gap: 24px;
+}
