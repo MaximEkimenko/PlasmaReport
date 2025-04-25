@@ -31,3 +31,4 @@ BASEDIR = settings.BASE_DIR
 PARTS_DIR = Path(r"M:\Xranenie\Sigma\Parts")
 REPORTS_DIR = Path(r"M:\Xranenie\Sigma\eReports")
 STATIC_IMAGES_DIR = BASEDIR / "static" / "images"
+STATIC_DIR = BASEDIR / "static"

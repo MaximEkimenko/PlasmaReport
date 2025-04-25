@@ -304,6 +304,7 @@ class PartDAO(BaseDAO[Part]):
                     }
                     | {"program_pic": await get_program_image(part.program.ProgramName)}
                     | {"part_pic": await get_part_image(part.PartName)}
+                    | {"ProgramName": part.program.ProgramName}
             )
 
             output.append(combined_data)
@@ -403,6 +404,4 @@ class PartDAO(BaseDAO[Part]):
             for program in programs
         ]
 
-        # Вывод результата
-
-        return (output)
+        return output
