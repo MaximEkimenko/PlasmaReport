@@ -21,7 +21,7 @@ if not exist "%VENV_PATH%" (
     exit /b
 )
 
-start "PlasmaReport Backend" cmd /k "cd /d %BACKEND_PATH% && call %VENV_PATH% && uvicorn main:app --host 0.0.0.0 --port 8000"
+start "PlasmaReport Backend" cmd /k "cd /d %BACKEND_PATH% && call %VENV_PATH% && uvicorn main:app --host 0.0.0.0 --port 8005"
 
 REM waiting for backend to start up
 timeout /t 10 /nobreak >nul

@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     sigma_password: str
     SECRET_KEY: str
     ALGORITHM: str
+    SUPER_USER_PASSWORD: str
+    SUPER_USER: str
 
     @property
     def db_url(self) -> str:

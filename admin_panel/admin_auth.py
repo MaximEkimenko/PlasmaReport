@@ -2,6 +2,8 @@
 from starlette.requests import Request
 from sqladmin.authentication import AuthenticationBackend
 
+from config import settings
+
 
 class AdminAuth(AuthenticationBackend):
     """Класс аутентификации администратора в панели администратора в SQLAdmin."""
@@ -9,8 +11,8 @@ class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         """Метод аутентификации администратора в панели администратора в SQLAdmin."""
         form_data = await request.form()
-        # проверка логина и пароля # TODO в реальном приложении нужно проверять логин и пароль в БД пользователя admin
-        if form_data.get("password") == "Epass1":
+        if (form_data.get("password") == settings.SUPER_USER_PASSWORD and
+                form_data.get("username") == settings.SUPER_USER):
             request.session.update({"token": "secret_token"})
             return True
         return False
@@ -25,5 +27,4 @@ class AdminAuth(AuthenticationBackend):
         return request.session.get("token")
 
 
-# TODO разобраться с тем как работает token в панели администратора в SQLAdmin
 authentication_backend = AdminAuth(secret_key="")
