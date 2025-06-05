@@ -70,7 +70,8 @@ ignore = [
    "N805",     # First argument of a method should be named `self`
    "TRY301",
    "RUF015",
-   "S101"
+   "S101",
+   "F821"
 ]
 
 [lint.flake8-quotes]

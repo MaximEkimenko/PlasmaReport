@@ -4,19 +4,19 @@ set FRONTEND_PATH=%~dp0frontend
 set VENV_PATH=%~dp0.venv\Scripts\activate.bat
 
 if not exist "%BACKEND_PATH%" (
-    echo Ошибка: Путь к backend не найден: %BACKEND_PATH%
+    echo ERR: wrong backend path: %BACKEND_PATH%
     pause
     exit /b
 )
 
 if not exist "%FRONTEND_PATH%" (
-    echo Ошибка: Путь к frontend не найден: %FRONTEND_PATH%
+    echo ERR: wrong frontend path: %FRONTEND_PATH%
     pause
     exit /b
 )
 
 if not exist "%VENV_PATH%" (
-    echo Ошибка: Виртуальное окружение не найдено: %VENV_PATH%
+    echo ERR: wrong env: %VENV_PATH%
     pause
     exit /b
 )

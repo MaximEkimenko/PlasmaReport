@@ -7,7 +7,7 @@ from decimal import Decimal
 from sqlalchemy import TEXT, TIMESTAMP, ForeignKey, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
-from auth.models import User
+# from auth.models import User
 from db.database import Base, uniq_string
 from master.enums import Jobs
 from techman.enums import WoStatus, PartStatus, ProgramStatus, ProgramPriority
@@ -95,7 +95,7 @@ class FioDoer(Base):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("user.id", name="fk_fiodoer_user_id"), unique=True, nullable=True,
     )
-    user: Mapped[User] = relationship(back_populates="fio_doer")
+    user: Mapped["User"] = relationship("User", back_populates="fio_doer")
 
     def __str__(self) -> str:
         """Строковое представление для админ панели."""

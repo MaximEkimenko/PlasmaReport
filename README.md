@@ -3,7 +3,7 @@ title: PlasmaReport README
 created: 05.06.2025
 modified: 05.06.2025
 ---
-# Установка 
+# Установка (только windows) 
 - Клонировать проект:
 ```bash
 git clone <project link>
@@ -32,14 +32,27 @@ pip install uv
 uv sync
 ```
 
-- установить  `backendport` (если порт по умолчанию занят) в `/frontend/src/utils/urls.ts`
+- установить npm [скачать](https://nodejs.org/en?spm=a2ty_o01.29997173.0.0.2142c921xbsYJI) без лишних зависимостей. 
+- установить зависимости frontend
+```bash
+npm i 
+#или 
+npm install 
+```
+
+- установить  `ip:port` в `/frontend/src/utils/urls.ts`
 ```typescript
 export const BASE_URL = "http://localhost:some_port_numbers";
 ```
 
-- Запуск предусмотрен только на windows (требования sigma-nest)
-```text
-start.bat из корня проекта
+- Добавить `ip:port` серверов в список `origins`  файла `main.py`
+```python
+origins = [
+...
+    "192.168.8.144:5173",
+    "192.168.8.144:8010",
+...
+]
 ```
 
 - установить миграции:
@@ -48,6 +61,10 @@ alembic revision --autogenerate
 alembic upgrade head
 ```
 
+- Запуск предусмотрен только на windows (требования sigma-nest)
+```text
+start.bat из корня проекта
+```
 
 ## После запуска
 - Администратору зарегистрировать пользователей. 

@@ -6,11 +6,10 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase, SQLAlchemyBaseUs
 
 from auth.enums import UserRole
 from db.database import Base
+from techman.models import FioDoer
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
-
-    from techman.models import FioDoer
 
 
 class User(Base, SQLAlchemyBaseUserTable):
@@ -20,7 +19,7 @@ class User(Base, SQLAlchemyBaseUserTable):
     last_name: Mapped[str]
     role: Mapped[UserRole] = mapped_column(default=UserRole.USER)
 
-    fio_doer: Mapped["FioDoer"] = relationship(back_populates="user")
+    fio_doer: Mapped["FioDoer"] = relationship(FioDoer, back_populates="user")
 
     @classmethod
     def get_db(cls, session: "AsyncSession") -> "SQLAlchemyUserDatabase":

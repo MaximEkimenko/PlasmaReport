@@ -54,6 +54,14 @@ origins = [
     "192.168.12.38:5173",
     "192.168.8.168:5173",
     "http://192.168.8.168:5173",
+    "http://192.168.8.30:5173",
+    "http://192.168.8.30:8005",
+    "192.168.8.30:5173",
+    "192.168.8.30:8005",
+    "http://192.168.8.163:5173",
+    "http://192.168.8.163:8005",
+    "192.168.8.30:5173",
+    "192.168.8.30:8005",
 ]
 
 # CORS
@@ -81,7 +89,7 @@ register_routers(app)
 create_admin_panel(app)
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="192.168.8.163", port=8000, reload=True)
+    uvicorn.run("main:app", host="192.168.8.163", port=8005, reload=True)
 
 # uvicorn main:app --host 0.0.0.0 --port 8000  --reload
 # uvicorn main:app --reload

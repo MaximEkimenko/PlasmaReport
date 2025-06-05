@@ -41,7 +41,6 @@ class Base(AsyncAttrs, DeclarativeBase):
         TIMESTAMP, server_default=func.now(), onupdate=func.now(),
     )
 
-    @classmethod
     @declared_attr
     def __tablename__(cls) -> str:
         """Автоматическое заполнение имени таблицы."""

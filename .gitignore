@@ -11,3 +11,4 @@ plasma_report.db
 logs
 *.bmp
 *.png
+migration/versions
