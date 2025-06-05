@@ -155,7 +155,6 @@ class Part(Base):
     RevisionNumber: Mapped[str]  # RevisionNumber
     PK_PIP: Mapped[str]  # PK_PIP
     Thickness: Mapped[float]  # Thickness
-    # TODO добавить поле для хранения ссылки на скопированную картинку детали ?
 
     part_status: Mapped[PartStatus] = mapped_column(default=PartStatus.UNASSIGNED, index=True)
     # фактически изготовленное количество деталей
@@ -164,9 +163,9 @@ class Part(Base):
     SourceFileName: Mapped[str] = mapped_column(TEXT, default="", nullable=True)
 
     # для каждой программы уникальная деталь
-    __table_args__ = (
-        UniqueConstraint("PartName", "program_id", "wo_number_id", name="uq_part_program_wo"),
-    )
+    # __table_args__ = (
+    #     UniqueConstraint("PartName", "program_id", "wo_number_id", name="uq_part_program_wo"),
+    # )
 
     def __str__(self) -> str:
         """Строковое представление для админ панели."""
