@@ -34,8 +34,6 @@ class WoStatus(enum.StrEnum):
     FINISHED = "завершен"
 
 
-
-
 class ProgramPriority(enum.StrEnum):
     """Приоритеты программы(сменного задания)."""
 

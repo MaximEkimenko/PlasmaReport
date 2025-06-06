@@ -65,8 +65,7 @@ class Program(Base):
 
     parts: Mapped[list["Part"]] = relationship("Part", back_populates="program")
     program_status: Mapped[ProgramStatus] = mapped_column(default=ProgramStatus.CREATED, index=True)
-    program_priority: Mapped[ProgramPriority] = mapped_column(default=ProgramPriority.LOW,
-                                                              server_default=text("LOW"), index=True)
+    program_priority: Mapped[ProgramPriority] = mapped_column(default=ProgramPriority.LOW, index=True)
     # many_to_many к fio_doer_id
     fio_doers: Mapped[list["FioDoer"]] = relationship(
         "FioDoer", secondary="programfiodoerassociation", back_populates="programs",
